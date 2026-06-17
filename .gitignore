@@ -12,6 +12,3 @@ staticfiles/
 .idea/
 .vscode/
 *.log
-
-# stray screenshot
-image.png
