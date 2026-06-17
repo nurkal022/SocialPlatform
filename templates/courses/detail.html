@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% load ustaz_tags %}
+{% block title %}{{ course.title }}{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="row" style="align-items: flex-start;">
+    <div style="flex: 2;">
+      <h1>{{ course.title }}</h1>
+      <div class="course-meta" style="margin: 6px 0 14px;">
+        <span class="pill">{{ course.get_level_display }}</span>
+        <span class="pill">{{ course.language|upper }}</span>
+        <span class="muted">{{ course.duration_hours }} сағат</span>
+        <span class="muted">{{ course.total_lessons }} сабақ</span>
+        {% if review_count %}
+          <span style="color: var(--accent); font-weight: 600;">{{ review_avg|stars }}</span>
+          <span class="muted small">{{ review_avg|floatformat:1 }} · {{ review_count }} баға</span>
+        {% endif %}
+      </div>
+      <p class="lead">{{ course.short_description }}</p>
+      <div class="card">
+        <h3>Курс туралы</h3>
+        <p style="white-space: pre-wrap;">{{ course.description }}</p>
+      </div>
+
+      <h2 style="margin-top: 24px;">Курс бағдарламасы</h2>
+      {% for module in course.modules.all %}
+        <div class="card" style="margin-bottom: 12px;">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+            <span class="pill" style="background: var(--primary-100); color: var(--primary-600);">Модуль {{ module.order }}</span>
+            <h3 style="margin: 0;">{{ module.title }}</h3>
+          </div>
+          {% if module.summary %}<p class="muted" style="margin: 6px 0 12px;">{{ module.summary }}</p>{% endif %}
+          <ol style="padding-left: 18px; margin: 8px 0 0;">
+            {% for lesson in module.lessons.all %}
+              <li style="padding: 5px 0;">
+                <span style="margin-right:6px;">📖</span>
+                {% if enrollment or lesson.is_free_preview %}
+                  <a href="{{ lesson.get_absolute_url }}">{{ lesson.title }}</a>
+                {% else %}
+                  <span class="muted">🔒 {{ lesson.title }}</span>
+                {% endif %}
+                <span class="small muted">— {{ lesson.duration_minutes }} мин</span>
+                {% if lesson.id in completed_lesson_ids %}<span class="pill pill-success">✓</span>{% endif %}
+              </li>
+            {% endfor %}
+            {% for cs in module.cases.all %}
+              {% if cs.is_published %}
+                <li style="padding: 5px 0; list-style: none; margin-left: -14px;">
+                  <span style="margin-right:6px;">📋</span>
+                  {% if enrollment %}
+                    <a href="{% url 'assessments:case_detail' cs.id %}" style="color: #be185d;">Кейс: {{ cs.title }}</a>
+                  {% else %}
+                    <span class="muted">🔒 Кейс: {{ cs.title }}</span>
+                  {% endif %}
+                  <span class="pill" style="background: #fce7f3; color: #be185d; border-color: #fbcfe8;">ИИ бағалайды</span>
+                </li>
+              {% endif %}
+            {% endfor %}
+            {% if module.has_test and module.quiz %}
+              <li style="padding: 5px 0; list-style: none; margin-left: -14px;">
+                <span style="margin-right:6px;">📝</span>
+                {% if enrollment %}
+                  <a href="{% url 'assessments:quiz_start' module.quiz.id %}" style="color: var(--accent-600); font-weight:600;">Модуль тесті</a>
+                {% else %}
+                  <span class="muted">🔒 Модуль тесті</span>
+                {% endif %}
+                <span class="small muted">— {{ module.quiz.questions.count }} сұрақ, өту {{ module.quiz.pass_pct }}%</span>
+              </li>
+            {% endif %}
+          </ol>
+        </div>
+      {% endfor %}
+
+      {# ====== Reviews ====== #}
+      <section style="margin-top: 32px;">
+        <h2>Шолулар <span class="muted" style="font-weight:500;">({{ review_count }})</span></h2>
+
+        {% if review_count %}
+          <div class="card" style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+            <div style="text-align:center;">
+              <div style="font-family:'Space Grotesk',sans-serif; font-size:48px; font-weight:700; color: var(--ink);">{{ review_avg|floatformat:1 }}</div>
+              <div style="color: var(--accent); font-size: 22px;">{{ review_avg|stars }}</div>
+              <div class="small muted">{{ review_count }} баға</div>
+            </div>
+            <div class="muted small" style="flex:1; min-width: 200px;">
+              Бұл курсты {{ review_count }} студент бағалаған. Сіз де өз пікіріңізді қалдырыңыз — болашақ студенттер үшін маңызды.
+            </div>
+          </div>
+        {% endif %}
+
+        {% if enrollment %}
+          <div class="card" style="margin-top: 14px;" x-data="{rating: {{ my_review.rating|default:0 }}, hover: 0}">
+            <h3 style="margin-top:0;">{% if my_review %}Менің бағам{% else %}Курсты бағалаңыз{% endif %}</h3>
+            <form method="post" action="{% url 'social:add_review' course.slug %}" class="form" style="max-width:none;">
+              {% csrf_token %}
+              <div style="display:flex; gap:6px; font-size: 36px; cursor: pointer;">
+                <template x-for="n in 5" :key="n">
+                  <span @click="rating = n" @mouseenter="hover = n" @mouseleave="hover = 0"
+                        :style="{color: (hover || rating) >= n ? '#fb7050' : '#cbd5e1'}"
+                        style="transition: color 0.1s;">★</span>
+                </template>
+                <input type="hidden" name="rating" :value="rating" required>
+              </div>
+              <div>
+                <label>Шолу (қалауыңызша)</label>
+                <textarea name="body" rows="3" maxlength="2000" placeholder="Курс туралы ойыңызбен бөлісіңіз...">{{ my_review.body|default:"" }}</textarea>
+              </div>
+              <button class="btn btn-primary" :disabled="rating === 0" style="justify-self:start;">
+                {% if my_review %}Жаңарту{% else %}Жіберу{% endif %}
+              </button>
+            </form>
+          </div>
+        {% elif not user.is_authenticated %}
+          <p class="muted"><a href="{% url 'accounts:login' %}?next={{ request.path }}">Кіріңіз</a>, шолу қалдыру үшін.</p>
+        {% endif %}
+
+        <div style="margin-top: 18px; display: flex; flex-direction: column; gap: 14px;">
+          {% for r in reviews %}
+            <div class="card">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap: 12px;">
+                <div style="display:flex; gap:10px; align-items:center;">
+                  {% if r.user.avatar %}
+                    <img src="{{ r.user.avatar.url }}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
+                  {% else %}
+                    <div class="avatar-fallback" style="width:36px;height:36px;font-size:14px;">{{ r.user.display_name|slice:":1"|upper }}</div>
+                  {% endif %}
+                  <div>
+                    <strong>{{ r.user.display_name }}</strong>
+                    <div class="small muted">{{ r.created_at|date:"d.m.Y" }}</div>
+                  </div>
+                </div>
+                <span style="color: var(--accent); font-size: 18px;">{{ r.rating|stars }}</span>
+              </div>
+              {% if r.body %}<p style="margin: 10px 0 0; line-height: 1.55;">{{ r.body|linebreaksbr }}</p>{% endif %}
+            </div>
+          {% empty %}
+            <p class="muted center" style="padding: 20px 0;">Әзірге шолу жоқ.</p>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+
+    <div style="flex: 1; min-width: 280px;">
+      <div class="card" style="position: sticky; top: 80px;">
+        {% if enrollment %}
+          <p><strong>Сіз курсқа жазылғансыз</strong></p>
+          <div class="progress" style="margin: 10px 0;"><div style="width: {{ enrollment.progress_pct }}%"></div></div>
+          <div class="small muted">{{ enrollment.progress_pct }}% аяқталды</div>
+          {% with first=course.modules.first %}
+            {% if first and first.lessons.first %}
+              <a class="btn btn-primary btn-block" href="{{ first.lessons.first.get_absolute_url }}">Жалғастыру</a>
+            {% endif %}
+          {% endwith %}
+        {% elif user.is_authenticated %}
+          <form method="post" action="{% url 'courses:enroll' course.slug %}">{% csrf_token %}
+            <button class="btn btn-primary btn-block">Курсқа жазылу (ақысыз)</button>
+          </form>
+        {% else %}
+          <a class="btn btn-primary btn-block" href="{% url 'accounts:signup' %}?next={{ request.path }}">Тіркеліп бастау</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

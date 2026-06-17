@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}{{ case.title }}{% endblock %}
+
+{% block content %}
+<div class="lp-shell">
+  {# Sidebar — full course tree, same as in lesson view #}
+  {% if course %}
+    {% include "courses/_course_sidebar.html" with current_case_id=case.id current_module_id=case.module.id %}
+  {% endif %}
+
+  <main class="lp-main">
+    {# Breadcrumb / back nav #}
+    <div class="lp-crumb" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      {% if course %}
+        <a href="{{ course.get_absolute_url }}" style="color: var(--muted);">{{ course.title|truncatechars:32 }}</a>
+        <span>›</span>
+        {% if case.module %}
+          <span>Модуль {{ case.module.order }}</span>
+          <span>›</span>
+        {% endif %}
+        <span>Кейс</span>
+      {% else %}
+        <a href="{% url 'assessments:cases' %}" style="color: var(--muted);">Кейстер банкы</a>
+      {% endif %}
+    </div>
+
+    <h1 class="lp-title">📋 {{ case.title }}</h1>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom: 18px;">
+      <span class="pill">{{ case.get_difficulty_display }}</span>
+      <span class="pill" style="background: #fce7f3; color: #be185d; border-color: #fbcfe8;">ИИ бағалайды</span>
+      <span class="muted small">Мин. ұзындық: {{ case.min_words }} сөз</span>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Жағдай</h3>
+      <p style="white-space:pre-wrap; line-height: 1.65; font-size: 15.5px;">{{ case.situation }}</p>
+      {% if case.questions %}
+        <h3 style="margin-bottom: 6px;">Сұрақтар</h3>
+        <ol style="margin: 0; padding-left: 20px;">{% for q in case.questions %}<li style="margin-bottom: 4px;">{{ q }}</li>{% endfor %}</ol>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Бағалау критерийлері</h3>
+      <ul style="margin: 0; padding-left: 20px;">
+        {% for c in rubric.criteria %}
+          <li style="margin-bottom: 6px;"><strong>{{ c.name }}</strong> ({{ c.weight }}%) — <span class="muted">{{ c.description }}</span></li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    {% if submission and submission.status == 'graded' %}
+      <div class="card" style="border-color: var(--success); border-width: 2px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+          <h3 style="margin: 0;">✓ ИИ бағалады: {{ submission.score }}/100</h3>
+          <a class="btn btn-ghost btn-sm" href="{% url 'assessments:case_submit' case.id %}" onclick="return false;">{{ submission.submitted_at|date:'d.m.Y H:i' }}</a>
+        </div>
+        <div class="progress" style="margin: 12px 0;"><div style="width: {{ submission.score }}%"></div></div>
+        <p style="margin-bottom: 4px;"><strong>Жалпы кері байланыс:</strong></p>
+        <p style="margin-top: 4px;">{{ submission.feedback }}</p>
+        {% if submission.criteria_scores %}
+          <h4 style="margin-top: 16px;">Критерийлер бойынша</h4>
+          <ul style="padding-left: 20px;">
+            {% for c in submission.criteria_scores %}
+              <li><strong>{{ c.name }}</strong>: {{ c.score }}/100 — {{ c.comment }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        {% if case.expert_analysis %}
+          <div style="margin-top: 16px; padding: 14px 18px; background: linear-gradient(135deg, var(--primary-50), #cffafe); border-radius: 10px; border-left: 4px solid var(--primary);">
+            <h4 style="margin: 0 0 6px; color: var(--primary-600);">📖 Эталондық талдау (методист)</h4>
+            <p style="margin: 0; white-space:pre-wrap;">{{ case.expert_analysis }}</p>
+          </div>
+        {% endif %}
+        <details style="margin-top: 16px;">
+          <summary style="cursor: pointer; color: var(--muted); font-weight: 600;">Сіздің жауабыңыз</summary>
+          <p style="white-space:pre-wrap; margin-top: 10px;">{{ submission.response }}</p>
+        </details>
+      </div>
+    {% elif user.is_authenticated %}
+      <form method="post" action="{% url 'assessments:case_submit' case.id %}" class="card">
+        {% csrf_token %}
+        <h3 style="margin-top: 0;">Сіздің жауабыңыз</h3>
+        <p class="muted small">Минимум {{ case.min_words }} сөз. ИИ-әдіскер критерийлер бойынша 0-100 ұпай шкаласымен бағалайды.</p>
+        <textarea name="response" rows="14" required
+                  style="width:100%; padding:14px; border:1.5px solid var(--line); border-radius:10px; font-family:inherit; font-size:15px; line-height:1.6;"
+                  oninput="document.getElementById('wc').textContent = this.value.trim().split(/\s+/).filter(Boolean).length">{% if submission %}{{ submission.response }}{% endif %}</textarea>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 12px;">
+          <span class="muted small">Сөз саны: <span id="wc">0</span> / {{ case.min_words }}</span>
+          <button class="btn btn-primary">Жіберу және ИИ бағалатыну</button>
+        </div>
+      </form>
+    {% else %}
+      <p><a class="btn btn-primary" href="{% url 'accounts:login' %}?next={{ request.path }}">Кіріп жауап беріңіз</a></p>
+    {% endif %}
+
+    {# Footer nav: back to lesson + next/prev cases via sidebar #}
+    <div class="lp-nav">
+      <div>
+        {% if return_to %}
+          <a class="btn btn-ghost" href="{{ return_to.get_absolute_url }}">← Сабаққа қайту: {{ return_to.title|truncatechars:30 }}</a>
+        {% elif course %}
+          <a class="btn btn-ghost" href="{{ course.get_absolute_url }}">← Курс бетіне</a>
+        {% endif %}
+      </div>
+      <div>
+        {% if case.module and case.module.quiz %}
+          <a class="btn btn-accent" href="{% url 'assessments:quiz_start' case.module.quiz.id %}">Модуль тесті →</a>
+        {% endif %}
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Сертификатты тексеру{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 600px;">
+  <h1>Сертификатты тексеру</h1>
+  {% if valid %}
+    <div class="card">
+      <p>✅ <strong>Жарамды сертификат</strong></p>
+      <p><strong>Иесі:</strong> {{ cert.full_name_snapshot }}</p>
+      <p><strong>Курс:</strong> {{ cert.course.title }}</p>
+      <p><strong>Балл:</strong> {{ cert.final_score_pct }}%</p>
+      <p><strong>Берілген күні:</strong> {{ cert.issued_at|date:"d.m.Y" }}</p>
+      <p><strong>ID:</strong> {{ cert.uid }}</p>
+      <a class="btn btn-primary" href="{% url 'certificates:download' cert.uid %}">PDF жүктеу</a>
+    </div>
+  {% else %}
+    <div class="card">
+      <p>❌ Сертификат табылмады немесе ID қате.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

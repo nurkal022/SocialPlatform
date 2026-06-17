@@ -1,0 +1,8 @@
+Django>=5.0,<5.2
+Pillow>=10.2
+openai>=1.50
+python-decouple>=3.8
+qrcode[pil]>=7.4
+reportlab>=4.0
+markdown>=3.5
+bleach>=6.1

@@ -1,0 +1,29 @@
+{% if block.type == "heading" %}
+  <h2 class="block block-heading">{{ block.value }}</h2>
+{% elif block.type == "paragraph" %}
+  <p class="block">{{ block.value|linebreaksbr }}</p>
+{% elif block.type == "quote" %}
+  <blockquote class="block block-quote">
+    {{ block.value.text|default:block.value }}
+    {% if block.value.author %}<div class="small muted">— {{ block.value.author }}</div>{% endif %}
+  </blockquote>
+{% elif block.type == "term" %}
+  <div class="block block-term">
+    <div class="term-name">{{ block.value.name }}</div>
+    <div>{{ block.value.definition }}</div>
+  </div>
+{% elif block.type == "callout" %}
+  <div class="block block-callout">{{ block.value|linebreaksbr }}</div>
+{% elif block.type == "image" %}
+  <figure class="block block-image">
+    <img src="{{ block.value.url }}" alt="{{ block.value.caption|default:'' }}">
+    {% if block.value.caption %}<figcaption class="small muted center">{{ block.value.caption }}</figcaption>{% endif %}
+  </figure>
+{% elif block.type == "list" %}
+  <ul class="block">{% for item in block.value %}<li>{{ item }}</li>{% endfor %}</ul>
+{% elif block.type == "video" %}
+  <div class="block block-video">
+    {% if block.value.url %}<iframe src="{{ block.value.url }}" allowfullscreen></iframe>
+    {% else %}<video src="{{ block.value.file }}" controls></video>{% endif %}
+  </div>
+{% endif %}

@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% load humanize static %}
+{% block title %}Жоба туралы{% endblock %}
+
+{% block content %}
+
+{# ====== HERO ====== #}
+<section class="ab-hero">
+  <div class="container">
+    <div class="hero-eyebrow">
+      <span class="dot"></span>
+      Қазақ тіліндегі бірінші ИИ-педагогика академиясы
+    </div>
+    <h1 class="ab-title">
+      Болашақ ұстаздарға<br>
+      <span class="gr">бір орынды цифрлық академия</span>
+    </h1>
+    <p class="ab-lead">
+      Заманауи педагогика курстары, нақты мектеп жағдайларынан кейстер,
+      ИИ-әдіскер және расталатын сертификат — бәрі қазақ тілінде.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary btn-lg" href="{% url 'courses:catalog' %}">Курстарға өту →</a>
+      <a class="btn btn-ghost btn-lg" href="#author">Автор туралы ↓</a>
+    </div>
+  </div>
+</section>
+
+{# ====== STATS BANNER ====== #}
+<section class="container">
+  <div class="ab-stats">
+    <div class="ab-stat">
+      <div class="ab-stat-num">{{ stats.courses }}</div>
+      <div class="ab-stat-label">Курс</div>
+    </div>
+    <div class="ab-stat">
+      <div class="ab-stat-num">{{ stats.lessons }}</div>
+      <div class="ab-stat-label">Сабақ</div>
+    </div>
+    <div class="ab-stat">
+      <div class="ab-stat-num">{{ stats.cases }}</div>
+      <div class="ab-stat-label">Кейс</div>
+    </div>
+    <div class="ab-stat">
+      <div class="ab-stat-num">{{ stats.questions }}+</div>
+      <div class="ab-stat-label">Тест сұрағы</div>
+    </div>
+  </div>
+</section>
+
+{# ====== MISSION QUOTE ====== #}
+<section class="container">
+  <div class="ab-quote">
+    <div class="ab-quote-mark">"</div>
+    <p>
+      Платформаның миссиясы — болашақ ұстазға тек теорияны емес,
+      <strong>мектеп тәжірибесіндегі шынайы жағдайларды</strong> шешуді үйрету.
+      Заманауи құралдармен, өзіне сай уақытта, қазақ тілінде.
+    </p>
+  </div>
+</section>
+
+{# ====== PROBLEMS ====== #}
+<section class="container ab-section">
+  <div class="ab-section-head">
+    <div class="ab-eyebrow">Не үшін жасалды</div>
+    <h2>Қазақстан педагогикасының үш мәселесі</h2>
+  </div>
+  <div class="ab-problems">
+    <div class="ab-problem ab-problem-1">
+      <div class="ab-problem-num">01</div>
+      <h3>Қазақ тіліндегі контент тапшылығы</h3>
+      <p>Заманауи цифрлық педагогика материалы көбіне орыс не ағылшын тілінде. Қазақ тіліндегі ресурс — сирек.</p>
+    </div>
+    <div class="ab-problem ab-problem-2">
+      <div class="ab-problem-num">02</div>
+      <h3>Теория мен практика арасындағы алшақтық</h3>
+      <p>Студент Макаренконы біледі, бірақ ата-ана агрессия танытқанда нені істерін білмейді.</p>
+    </div>
+    <div class="ab-problem ab-problem-3">
+      <div class="ab-problem-num">03</div>
+      <h3>Жаттығу ортасының жоқтығы</h3>
+      <p>Кейс-жағдайларды талдау, сабақ жоспарын құру, әдістемелік шешімдерді бағалау үшін бірыңғай орта жоқ.</p>
+    </div>
+  </div>
+</section>
+
+{# ====== FEATURES GRID ====== #}
+<section class="container ab-section">
+  <div class="ab-section-head">
+    <div class="ab-eyebrow">Платформа ұсынады</div>
+    <h2>Бәрі бір орында, қазақ тілінде</h2>
+  </div>
+  <div class="ab-features">
+    <div class="ab-feature">
+      <div class="ab-feature-ico" style="background:#dbeafe;color:#1d4ed8;">📚</div>
+      <h3>Модульдік курстар</h3>
+      <p>Бейне, теория, тестер, кейстер — бір ағынмен қадам-қадам.</p>
+    </div>
+    <div class="ab-feature">
+      <div class="ab-feature-ico" style="background:#cffafe;color:#0e7490;">🤖</div>
+      <h3>ИИ-әдіскер 24/7</h3>
+      <p>Сабақ контекстінде сұрақ қойыңыз, бірден жауап алыңыз.</p>
+    </div>
+    <div class="ab-feature">
+      <div class="ab-feature-ico" style="background:#fce7f3;color:#be185d;">📋</div>
+      <h3>Кейстер банкі</h3>
+      <p>Нақты мектеп жағдайлары. ИИ бағалайды, методист эталонын ұсынады.</p>
+    </div>
+    <div class="ab-feature">
+      <div class="ab-feature-ico" style="background:#fef9c3;color:#a16207;">🏆</div>
+      <h3>Геймификация</h3>
+      <p>XP, деңгейлер, streak, белгілер, лидерлер тақтасы.</p>
+    </div>
+    <div class="ab-feature">
+      <div class="ab-feature-ico" style="background:#fff1ed;color:#ea5a3a;">🎓</div>
+      <h3>Расталған сертификат</h3>
+      <p>QR-кодпен PDF, әркім онлайн тексере алады.</p>
+    </div>
+    <div class="ab-feature">
+      <div class="ab-feature-ico" style="background:#ede9fe;color:#6d28d9;">💬</div>
+      <h3>Тірі талқылау</h3>
+      <p>Сабақ астында пікірлер, лайктар, жауаптар — оқу қауымдастығы.</p>
+    </div>
+  </div>
+</section>
+
+{# ====== HOW IT WORKS ====== #}
+<section class="container ab-section">
+  <div class="ab-section-head">
+    <div class="ab-eyebrow">Қалай жұмыс істейді</div>
+    <h2>Тіркелуден сертификатқа дейін</h2>
+  </div>
+  <div class="ab-timeline">
+    <div class="ab-step">
+      <div class="ab-step-num">1</div>
+      <h3>Тіркелесіз</h3>
+      <p>Email қажет емес — жай ғана логин, аты-жөні, құпиясөз.</p>
+    </div>
+    <div class="ab-step">
+      <div class="ab-step-num">2</div>
+      <h3>Курсты таңдайсыз</h3>
+      <p>Қазіргі курстар: жалпы педагогика негіздері, цифрлық педагогика.</p>
+    </div>
+    <div class="ab-step">
+      <div class="ab-step-num">3</div>
+      <h3>Сабақтарды өтесіз</h3>
+      <p>Step-by-step плеер: видео, теория, чекпоинт-сұрақтар, ИИ-кеңесші.</p>
+    </div>
+    <div class="ab-step">
+      <div class="ab-step-num">4</div>
+      <h3>Тест пен кейстерді тапсырасыз</h3>
+      <p>Модуль тесті — 10 сұрақ, кейстер — ИИ бағалайды, эталонды көрсетеді.</p>
+    </div>
+    <div class="ab-step">
+      <div class="ab-step-num">5</div>
+      <h3>Сертификат аласыз</h3>
+      <p>Финалды тапсырғаннан кейін — расталатын PDF QR-кодпен.</p>
+    </div>
+  </div>
+</section>
+
+{# ====== AUTHOR ====== #}
+<section class="container ab-section" id="author">
+  <div class="ab-author">
+    <div class="ab-author-photo">
+      <img src="{% static 'img/author.jpg' %}" alt="Айдарханова Назым Ермахановна">
+      <div class="ab-author-photo-overlay">
+        <div class="ab-author-eyebrow">Жоба авторы</div>
+        <div class="ab-author-name">Айдарханова Назым Ермахановна</div>
+        <div class="ab-author-role">Арнайы пән оқытушысы</div>
+      </div>
+    </div>
+    <div class="ab-author-main">
+      <div class="ab-author-quote">
+        Бұл платформа — болашақ ұстаздарға қажетті құралды бір орынға жинау
+        туралы жеке миссиямның жемісі. Қазақ тіліндегі заманауи педагогика
+        контенті дамуы тиіс — әр студент-педагог теориядан тек оқып қана қоймай,
+        нақты жағдайларда дайын болуы керек.
+      </div>
+      <div class="ab-author-org">
+        <div class="ab-org-ico">🏫</div>
+        <div>
+          <div class="ab-org-name">Ғ. Мұратбаев атындағы Жетісай гуманитарлық техникалық колледжі</div>
+          <div class="ab-org-tag">Білім беру ұйымы</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ====== FINAL CTA ====== #}
+<section class="container ab-section">
+  <div class="ab-cta">
+    <h2>Болашақ ұстаз бола бастаңыз</h2>
+    <p>Ақысыз тіркелу, ИИ-әдіскер, қазақ тіліндегі толық курс.</p>
+    <div class="hero-actions" style="justify-content:center;">
+      <a class="btn btn-primary btn-lg" href="{% url 'accounts:signup' %}">Тіркелу →</a>
+      <a class="btn btn-ghost btn-lg" href="{% url 'courses:catalog' %}">Курстар каталогы</a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

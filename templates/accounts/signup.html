@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Тіркелу{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 500px;">
+  <h1>Тіркелу</h1>
+  <form method="post" class="form">{% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div>
+        <label>{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+        {{ field.errors }}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary btn-block">Тіркеу</button>
+    <p class="small">Аккаунт бар ма? <a href="{% url 'accounts:login' %}">Кіру</a></p>
+  </form>
+</div>
+{% endblock %}

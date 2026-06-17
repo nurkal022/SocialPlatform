@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Қол жетімсіз{% endblock %}
+{% block content %}
+<div class="container error-page">
+  <div class="error-code">403</div>
+  <h1>Қол жетімсіз</h1>
+  <p class="lead muted">Сізде бұл бетке кіруге рұқсат жоқ.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary btn-lg" href="{% url 'core:landing' %}">← Басты бетке</a>
+  </div>
+</div>
+{% endblock %}

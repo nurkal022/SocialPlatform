@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}{{ quiz.title }}{% endblock %}
+{% block content %}
+<div class="container" x-data="quizTimer({
+    deadline: '{% if attempt.deadline %}{{ attempt.deadline|date:'c' }}{% endif %}',
+    submitUrl: '{% url 'assessments:attempt_submit' attempt.id %}'
+})">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+    <div>
+      <h1 style="margin:0;">{{ quiz.title }}</h1>
+      <div class="course-meta" style="margin-top: 8px;">
+        <span class="pill">{{ quiz.get_kind_display }}</span>
+        <span class="muted">Өту шегі: {{ quiz.pass_pct }}%</span>
+        <span class="muted">{{ questions|length }} сұрақ</span>
+      </div>
+    </div>
+    {% if attempt.deadline %}
+      <div class="quiz-timer" :class="{'is-low': lowTime}">
+        <div class="quiz-timer-label">Қалған уақыт</div>
+        <div class="quiz-timer-value" x-text="display"></div>
+      </div>
+    {% endif %}
+  </div>
+
+  <form method="post" action="{% url 'assessments:attempt_submit' attempt.id %}">
+    {% csrf_token %}
+    {% for q in questions %}
+      <div class="quiz-question">
+        <div class="qtitle">{{ forloop.counter }}. {{ q.text }}</div>
+        {% if q.kind == "single" %}
+          {% for ch in q.choices.all %}
+            <label class="choice"><input type="radio" name="q_{{ q.id }}" value="{{ ch.id }}"> <span>{{ ch.text }}</span></label>
+          {% endfor %}
+        {% elif q.kind == "multiple" %}
+          {% for ch in q.choices.all %}
+            <label class="choice"><input type="checkbox" name="q_{{ q.id }}" value="{{ ch.id }}"> <span>{{ ch.text }}</span></label>
+          {% endfor %}
+        {% elif q.kind == "tf" %}
+          <label class="choice"><input type="radio" name="q_{{ q.id }}" value="true"> Дұрыс</label>
+          <label class="choice"><input type="radio" name="q_{{ q.id }}" value="false"> Бұрыс</label>
+        {% elif q.kind == "fill" %}
+          <input type="text" name="q_{{ q.id }}" placeholder="Жауабыңыз..." style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;">
+        {% elif q.kind == "short" %}
+          <textarea name="q_{{ q.id }}" rows="3" style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;"></textarea>
+        {% elif q.kind == "match" %}
+          {% for pair in q.payload.pairs %}
+            <div style="display:flex; gap:8px; margin: 4px 0; align-items:center;">
+              <span style="min-width: 200px;">{{ pair.left }}</span>
+              <input type="text" name="q_{{ q.id }}_{{ pair.left }}" placeholder="Сәйкестік..." style="flex:1; padding:6px; border:1px solid var(--line); border-radius:6px;">
+            </div>
+          {% endfor %}
+        {% elif q.kind == "order" %}
+          <p class="small muted">Реттік нөмірі арқылы реттеңіз (1, 2, 3...)</p>
+          {% for item in q.payload.items %}
+            <div>{{ item }}</div>
+          {% endfor %}
+          <input type="hidden" name="q_{{ q.id }}_order" value="">
+        {% endif %}
+      </div>
+    {% endfor %}
+
+    <button class="btn btn-primary">Тестті тапсыру</button>
+  </form>
+</div>
+
+<script>
+function quizTimer({deadline, submitUrl}) {
+  return {
+    deadline: deadline ? new Date(deadline) : null,
+    display: "",
+    lowTime: false,
+    init() {
+      if (!this.deadline) return;
+      this.tick();
+      setInterval(() => this.tick(), 1000);
+    },
+    tick() {
+      const now = new Date();
+      const ms = this.deadline - now;
+      if (ms <= 0) {
+        this.display = "00:00";
+        // auto-submit
+        const form = document.querySelector("form[action*='/submit/']");
+        if (form && !form.dataset.submitted) {
+          form.dataset.submitted = "1";
+          form.submit();
+        }
+        return;
+      }
+      const total = Math.floor(ms / 1000);
+      const m = Math.floor(total / 60);
+      const s = total % 60;
+      this.display = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      this.lowTime = total < 60;
+    },
+  };
+}
+</script>
+{% endblock %}

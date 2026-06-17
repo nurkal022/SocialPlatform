@@ -1,0 +1,128 @@
+{% extends "admin/base_site.html" %}
+{% load humanize i18n %}
+
+{% block title %}Басқару панелі | Ұстаз{% endblock %}
+{% block content_title %}{% endblock %}
+{% block coltype %}ua-dashboard{% endblock %}
+
+{% block content %}
+<div class="ua-page-head">
+  <div>
+    <h1 class="ua-page-title">Басқару панелі</h1>
+    <p class="ua-page-sub">Курстар, сабақтар, тесттер және ИИ статистикасы</p>
+  </div>
+  <div class="ua-page-actions">
+    <a href="{% url 'admin:courses_course_add' %}" class="ua-btn ua-btn-primary">+ Жаңа курс</a>
+  </div>
+</div>
+
+<div class="ua-stats">
+  <div class="ua-stat ua-stat-blue">
+    <div class="ua-stat-value">{{ stats.courses }}</div>
+    <div class="ua-stat-label">Курстар</div>
+    <div class="ua-stat-foot"><a href="{% url 'admin:courses_course_changelist' %}">көру →</a></div>
+  </div>
+  <div class="ua-stat ua-stat-cyan">
+    <div class="ua-stat-value">{{ stats.lessons }}</div>
+    <div class="ua-stat-label">Сабақтар</div>
+    <div class="ua-stat-foot"><a href="{% url 'admin:courses_lesson_changelist' %}">көру →</a></div>
+  </div>
+  <div class="ua-stat ua-stat-coral">
+    <div class="ua-stat-value">{{ stats.students }}</div>
+    <div class="ua-stat-label">Студенттер</div>
+    <div class="ua-stat-foot"><a href="{% url 'admin:accounts_user_changelist' %}">көру →</a></div>
+  </div>
+  <div class="ua-stat ua-stat-amber">
+    <div class="ua-stat-value">{{ stats.cases }}</div>
+    <div class="ua-stat-label">Кейстер</div>
+    <div class="ua-stat-foot"><a href="{% url 'admin:assessments_casestudy_changelist' %}">көру →</a></div>
+  </div>
+</div>
+
+<div class="ua-mini-stats">
+  <div class="ua-mini">
+    <div class="ua-mini-label">Бүгінгі ИИ-вызовтар</div>
+    <div class="ua-mini-value">{{ stats.ai_calls_today }}</div>
+  </div>
+  <div class="ua-mini">
+    <div class="ua-mini-label">Ай ИИ-шығын</div>
+    <div class="ua-mini-value">${{ stats.ai_cost_month|floatformat:3 }}</div>
+  </div>
+  <div class="ua-mini">
+    <div class="ua-mini-label">Берілген сертификаттар</div>
+    <div class="ua-mini-value">{{ stats.certificates }}</div>
+  </div>
+  <div class="ua-mini">
+    <div class="ua-mini-label">Тапсырылған кейстер</div>
+    <div class="ua-mini-value">{{ stats.case_submissions }}</div>
+  </div>
+</div>
+
+<div class="ua-cols">
+  <div class="ua-panel">
+    <div class="ua-panel-head">
+      <h2>Соңғы қосылған сабақтар</h2>
+      <a href="{% url 'admin:courses_lesson_changelist' %}" class="ua-link">Барлығы →</a>
+    </div>
+    <table class="ua-table">
+      <thead><tr><th>Атауы</th><th>Модуль</th><th>Жаңартылды</th></tr></thead>
+      <tbody>
+        {% for l in recent_lessons %}
+          <tr>
+            <td><a href="{% url 'admin:courses_lesson_change' l.id %}">{{ l.title|truncatechars:50 }}</a></td>
+            <td class="muted">{{ l.module.title|truncatechars:25 }}</td>
+            <td class="muted">{{ l.updated_at|naturaltime }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3" class="muted center">Жоқ</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ua-panel">
+    <div class="ua-panel-head">
+      <h2>Соңғы тіркелгендер</h2>
+      <a href="{% url 'admin:accounts_user_changelist' %}" class="ua-link">Барлығы →</a>
+    </div>
+    <table class="ua-table">
+      <thead><tr><th>Пайдаланушы</th><th>Рөл</th><th>Қашан</th></tr></thead>
+      <tbody>
+        {% for u in recent_users %}
+          <tr>
+            <td><a href="{% url 'admin:accounts_user_change' u.id %}">{{ u.display_name }}</a></td>
+            <td><span class="ua-tag ua-tag-{{ u.role }}">{{ u.get_role_display }}</span></td>
+            <td class="muted">{{ u.date_joined|naturaltime }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="3" class="muted center">Жоқ</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="ua-panel">
+  <div class="ua-panel-head"><h2>Жылдам әрекеттер</h2></div>
+  <div class="ua-actions-grid">
+    <a href="{% url 'admin:courses_course_add' %}" class="ua-action ua-action-blue">
+      <div class="ua-action-ico">📚</div><div>Жаңа курс</div>
+    </a>
+    <a href="{% url 'admin:courses_module_add' %}" class="ua-action ua-action-cyan">
+      <div class="ua-action-ico">📂</div><div>Жаңа модуль</div>
+    </a>
+    <a href="{% url 'admin:courses_lesson_add' %}" class="ua-action ua-action-coral">
+      <div class="ua-action-ico">📖</div><div>Жаңа сабақ</div>
+    </a>
+    <a href="{% url 'admin:assessments_quiz_add' %}" class="ua-action ua-action-amber">
+      <div class="ua-action-ico">📝</div><div>Жаңа тест</div>
+    </a>
+    <a href="{% url 'admin:assessments_casestudy_add' %}" class="ua-action ua-action-rose">
+      <div class="ua-action-ico">📋</div><div>Жаңа кейс</div>
+    </a>
+    <a href="{% url 'admin:assessments_question_add' %}" class="ua-action ua-action-indigo">
+      <div class="ua-action-ico">❓</div><div>Жаңа сұрақ</div>
+    </a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Кейстер банкы{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>Кейстер банкы</h1>
+  <p class="lead">Нақты мектеп жағдайларын талдаңыз. ИИ-әдіскер жауабыңызды 100 ұпай шкаласымен бағалайды.</p>
+
+  <form method="get" style="display:flex; gap:10px; flex-wrap:wrap; margin: 14px 0 22px;">
+    <select name="course" style="padding:8px 12px; border:1.5px solid var(--line); border-radius:8px;">
+      <option value="">Барлық курстар</option>
+      {% for c in cases %}{% endfor %}
+    </select>
+    <select name="difficulty" style="padding:8px 12px; border:1.5px solid var(--line); border-radius:8px;">
+      <option value="">Барлық деңгейлер</option>
+      <option value="easy" {% if request.GET.difficulty == 'easy' %}selected{% endif %}>Жеңіл</option>
+      <option value="medium" {% if request.GET.difficulty == 'medium' %}selected{% endif %}>Орта</option>
+      <option value="hard" {% if request.GET.difficulty == 'hard' %}selected{% endif %}>Күрделі</option>
+    </select>
+    <button class="btn btn-ghost btn-sm">Сүзу</button>
+  </form>
+
+  <div class="course-grid">
+    {% for c in cases %}
+      <a class="course-card" href="{% url 'assessments:case_detail' c.id %}">
+        <div class="course-cover" style="background: linear-gradient(135deg, #be185d, #ec4899);">
+          📋 Кейс
+        </div>
+        <div class="course-body">
+          <h3 class="course-title">{{ c.title }}</h3>
+          <div class="course-meta">
+            <span class="pill">{{ c.get_difficulty_display }}</span>
+            {% if c.module %}<span class="muted">М{{ c.module.order }} · {{ c.course.title|truncatechars:24 }}</span>{% endif %}
+          </div>
+          <div class="course-desc">{{ c.situation|truncatewords:25 }}</div>
+        </div>
+      </a>
+    {% empty %}
+      <p>Кейстер әлі қосылмаған.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

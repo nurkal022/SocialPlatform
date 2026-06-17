@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Жаттығу — {{ lesson.title }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 720px;">
+  <div class="small muted"><a href="{{ lesson.get_absolute_url }}">← {{ lesson.title }}</a></div>
+  <h1>✨ Жаттығу сұрақтары</h1>
+  <p class="muted">ИИ-әдіскер осы сабақ бойынша 5 жаттығу сұрағын дайындайды.</p>
+
+  <form method="post">{% csrf_token %}
+    <button class="btn btn-primary">Жаңа сұрақтар жасау</button>
+  </form>
+
+  {% if error %}<p class="msg msg-warning" style="margin-top:14px;">{{ error }}</p>{% endif %}
+
+  {% for q in questions %}
+    <div class="card" x-data="{open:false}" style="margin-top: 12px;">
+      <h3 style="margin: 0 0 6px;">{{ forloop.counter }}. {{ q.question }}</h3>
+      {% if q.hint %}<p class="small muted">Кеңес: {{ q.hint }}</p>{% endif %}
+      <button class="btn btn-ghost btn-sm" @click="open=!open">
+        <span x-text="open ? 'Жасыру' : 'Жауапты көрсету'"></span>
+      </button>
+      <div x-show="open" x-cloak style="margin-top: 10px; padding: 10px; background: var(--cream); border-radius: 8px;">
+        <strong>Жауап:</strong> {{ q.answer }}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Лидерлер{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>Лидерлер тақтасы</h1>
+  <div class="row" style="align-items: end; margin: 12px 0 20px;">
+    <form method="get" style="display:flex; gap:8px; flex-wrap:wrap;">
+      <select name="scope" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px;">
+        <option value="all" {% if scope == 'all' %}selected{% endif %}>Жалпы</option>
+        <option value="weekly" {% if scope == 'weekly' %}selected{% endif %}>Апта</option>
+        <option value="monthly" {% if scope == 'monthly' %}selected{% endif %}>Ай</option>
+      </select>
+      <select name="kind" style="padding:8px 12px; border:1px solid var(--line); border-radius:8px;">
+        <option value="global" {% if scope_kind == 'global' %}selected{% endif %}>Барлық</option>
+        <option value="university" {% if scope_kind == 'university' %}selected{% endif %}>Менің ВУЗым</option>
+        <option value="region" {% if scope_kind == 'region' %}selected{% endif %}>Менің облысым</option>
+      </select>
+      <button class="btn btn-ghost btn-sm">Сүзу</button>
+    </form>
+  </div>
+
+  <table class="lb-table">
+    <thead><tr><th>#</th><th>Пайдаланушы</th><th>ВУЗ</th><th>Деңгей</th><th style="text-align:right;">XP</th></tr></thead>
+    <tbody>
+      {% for p in rows %}
+        <tr>
+          <td class="lb-rank top-{{ forloop.counter }}">{{ forloop.counter }}</td>
+          <td><a href="{% url 'accounts:profile' p.user.username %}">{{ p.user.display_name }}</a></td>
+          <td class="muted small">{{ p.user.university|default:"—" }}</td>
+          <td>L{{ p.level }}</td>
+          <td style="text-align:right;">
+            {% if scope == 'weekly' %}{{ p.weekly_xp|intcomma }}
+            {% elif scope == 'monthly' %}{{ p.monthly_xp|intcomma }}
+            {% else %}{{ p.xp|intcomma }}{% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="muted center">Әзірге деректер жоқ.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

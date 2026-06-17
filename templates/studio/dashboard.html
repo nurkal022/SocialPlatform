@@ -1,0 +1,54 @@
+{% extends "studio/_base.html" %}
+{% block title %}Студио — курстарды басқару{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="st-head">
+    <div>
+      <div class="st-eyebrow">Студио</div>
+      <h1 style="margin: 4px 0 0;">Курстарды басқару</h1>
+      <p class="muted" style="margin: 4px 0 0;">Курс құру, модуль/сабақ қосу, мазмұнды редакциялау — бір жерден.</p>
+    </div>
+    <form method="post" action="{% url 'courses:studio_course_create' %}"
+          style="display:flex; gap:8px;"
+          onsubmit="const t=this.title.value.trim(); if(!t){alert('Курс атауын жазыңыз'); return false;} this.title.value=t;">
+      {% csrf_token %}
+      <input type="text" name="title" placeholder="Жаңа курс атауы..." required minlength="2"
+             style="padding: 11px 14px; border: 1.5px solid var(--line); border-radius: 10px; min-width: 260px;">
+      <button class="btn btn-primary" type="submit">+ Курс құру</button>
+    </form>
+  </div>
+
+  <div class="st-courses">
+    {% for c in courses %}
+      <a class="st-course-card" href="{% url 'courses:studio_course' c.slug %}">
+        <div class="st-course-cover">
+          {{ c.title|slice:":1"|upper }}
+        </div>
+        <div class="st-course-body">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <h3>{{ c.title }}</h3>
+            {% if c.is_published %}
+              <span class="pill pill-success">Жарияланған</span>
+            {% else %}
+              <span class="pill pill-warn">Жоба</span>
+            {% endif %}
+          </div>
+          <div class="muted small">{{ c.short_description|truncatechars:80 }}</div>
+          <div class="st-course-meta">
+            <span>📂 {{ c.module_count }} модуль</span>
+            <span>📖 {{ c.lesson_count }} сабақ</span>
+            <span>👥 {{ c.student_count }} студент</span>
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <div class="card" style="text-align:center; padding: 40px;">
+        <div style="font-size: 48px;">📚</div>
+        <h3>Әлі курс жоқ</h3>
+        <p class="muted">Жоғарыдан «Курс құру» арқылы алғашқы курсыңызды бастаңыз.</p>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

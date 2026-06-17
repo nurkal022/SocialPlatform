@@ -1,0 +1,55 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | Ұстаз — басқару{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'admin/css/ustaz_admin.css' %}">
+{% endblock %}
+
+{% block branding %}
+<a href="{% url 'admin:index' %}" class="ua-brand">
+  <span class="ua-brand-mark">Ұ</span>
+  <span class="ua-brand-text">
+    <strong>Ұстаз</strong>
+    <span class="ua-brand-sub">Контентті басқару</span>
+  </span>
+</a>
+{% endblock %}
+
+{% block welcome-msg %}{% endblock %}
+
+{% block userlinks %}
+  <a href="/" class="ua-toplink">↗ Сайтқа қайту</a>
+  {% if user.is_active and user.is_staff %}
+    <span class="ua-toplink ua-user-greeting">{{ user.display_name|default:user.get_username }}</span>
+  {% endif %}
+  <form id="logout-form" method="post" action="{% url 'admin:logout' %}" style="display:inline;">
+    {% csrf_token %}
+    <button type="submit" class="ua-toplink ua-logout">Шығу</button>
+  </form>
+{% endblock %}
+
+{# Replace Django default nav-sidebar with our Kazakh-only grouped sidebar #}
+{% block nav-sidebar %}
+<nav id="nav-sidebar" class="ua-sidebar" aria-label="Басты мәзір">
+  {% include "admin/_sidebar.html" %}
+</nav>
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} ua-body{% endblock %}
+
+{# Force Django's nav-sidebar JS to mark .main as shifted on load (so sidebar is visible) #}
+{% block extrahead %}{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var m = document.getElementById('main');
+  if (m && !m.classList.contains('shifted')) m.classList.add('shifted');
+  try { localStorage.setItem('django.admin.navSidebarIsOpen', 'true'); } catch(e) {}
+});
+</script>
+{% endblock %}

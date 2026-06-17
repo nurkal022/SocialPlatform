@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Сервер қатесі{% endblock %}
+{% block content %}
+<div class="container error-page">
+  <div class="error-code">500</div>
+  <h1>Бір нәрсе бұзылды</h1>
+  <p class="lead muted">Сервер тарапынан қате орын алды. Кейінірек қайта көріп көріңіз — біз бұл туралы білдік.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary btn-lg" href="{% url 'core:landing' %}">← Басты бетке</a>
+  </div>
+</div>
+{% endblock %}

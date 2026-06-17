@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Бет табылмады{% endblock %}
+{% block content %}
+<div class="container error-page">
+  <div class="error-code">404</div>
+  <h1>Бет табылмады</h1>
+  <p class="lead muted">Бұл бет жоқ немесе жоғалып кеткен. Курстарға қайтып, оқуды жалғастырыңыз.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary btn-lg" href="{% url 'core:landing' %}">Басты бетке →</a>
+    <a class="btn btn-ghost btn-lg" href="{% url 'courses:catalog' %}">Курстарды қарау</a>
+  </div>
+</div>
+{% endblock %}

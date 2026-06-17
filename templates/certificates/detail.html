@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Сертификат{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 600px;">
+  <h1>🎓 Сертификат</h1>
+  <div class="card">
+    <p><strong>{{ cert.full_name_snapshot }}</strong></p>
+    <p>{{ cert.course.title }} — {{ cert.final_score_pct }}%</p>
+    <p class="small muted">{{ cert.issued_at|date:"d.m.Y" }} · ID: {{ cert.uid }}</p>
+    <a class="btn btn-primary" href="{% url 'certificates:download' cert.uid %}">PDF жүктеу</a>
+    <a class="btn btn-ghost" href="{{ cert.get_verify_url }}">Тексеру беті</a>
+  </div>
+</div>
+{% endblock %}

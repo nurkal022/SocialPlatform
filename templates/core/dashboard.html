@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Менің панелім{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  {# ===== Course completion celebration ===== #}
+  {% if just_completed_course %}
+    <div class="completion-modal" x-data="{open: true}" x-show="open" x-cloak>
+      <div class="completion-backdrop" @click="open = false"></div>
+      <div class="completion-card">
+        <div class="completion-emoji">🎉</div>
+        <h2>Жарайсыз!</h2>
+        <p>Сіз <strong>«{{ just_completed_course.title }}»</strong> курсының барлық сабақтарын аяқтадыңыз.</p>
+        {% if just_completed_course.has_final_exam %}
+          <p class="muted">Сертификат алу үшін финалдық емтиханды тапсырыңыз.</p>
+          {% for quiz in just_completed_course.quizzes.all %}
+            {% if quiz.kind == 'final' %}
+              <a class="btn btn-primary btn-lg" href="{% url 'assessments:quiz_start' quiz.id %}">🏁 Финалдық емтиханға өту</a>
+            {% endif %}
+          {% endfor %}
+        {% else %}
+          <p>Сертификатыңыз дайын!</p>
+        {% endif %}
+        <button class="btn btn-ghost" @click="open = false" style="margin-top: 8px;">Жабу</button>
+      </div>
+    </div>
+  {% endif %}
+
+  {# ===== Badge toast (if any earned in last 5 min) ===== #}
+  {% if recent_badges %}
+    <div class="badge-toast" x-data="{open: true}" x-show="open" x-cloak>
+      <div class="badge-toast-inner">
+        <div class="badge-toast-icon">{{ recent_badges.0.badge.icon }}</div>
+        <div style="flex:1;">
+          <strong>Жаңа белгі!</strong>
+          <div class="small">«{{ recent_badges.0.badge.name }}» — {{ recent_badges.0.badge.description }}</div>
+        </div>
+        <button @click="open=false" class="badge-toast-close">×</button>
+      </div>
+    </div>
+  {% endif %}
+
+  <h1>Сәлеметсіз бе, {{ user.display_name }}!</h1>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="label">XP</div><div class="value">{{ user.gprofile.xp|default:0|intcomma }}</div></div>
+    <div class="stat"><div class="label">Деңгей</div><div class="value">{{ user.gprofile.level|default:1 }}</div></div>
+    <div class="stat"><div class="label">Streak</div><div class="value">🔥 {{ user.streak.current|default:0 }}</div></div>
+    <div class="stat"><div class="label">Сертификаттар</div><div class="value">{{ user.certificates.count }}</div></div>
+  </div>
+
+  {# ===== Weekly challenge ===== #}
+  {% if challenge %}
+    <div class="card challenge-card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+        <div style="flex:1; min-width: 240px;">
+          <div class="small muted" style="text-transform:uppercase; letter-spacing:0.06em; font-weight:700;">🎯 Апта челленджі</div>
+          <h3 style="margin: 4px 0 6px;">{{ challenge.title }}</h3>
+          <p class="muted small" style="margin: 0 0 12px;">{{ challenge.description }}</p>
+          <div class="progress"><div style="width: {{ challenge_progress.pct }}%"></div></div>
+          <div style="display:flex; justify-content:space-between; margin-top: 6px;" class="small">
+            <span><strong>{{ challenge_progress.earned|intcomma }}</strong> / {{ challenge.target_xp|intcomma }} XP</span>
+            <span class="muted">{{ challenge.ends_on|date:"d M" }} дейін</span>
+          </div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-family:'Space Grotesk',sans-serif; font-size:32px; font-weight:700; color: var(--accent);">+{{ challenge.reward_xp }}</div>
+          <div class="small muted">XP сыйлық</div>
+          {% if challenge_progress.completed %}
+            <div class="pill pill-success" style="margin-top:6px;">✓ Орындалды</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {# ===== Empty state ===== #}
+  {% if not enrollment_details %}
+    <div class="card" style="margin-top: 24px; text-align: center; padding: 40px 24px;">
+      <div style="font-size: 56px;">📚</div>
+      <h2 style="margin: 16px 0 6px;">Сіз әлі ешбір курсқа жазылмадыңыз</h2>
+      <p class="muted" style="max-width: 480px; margin: 0 auto 20px;">
+        Курс таңдап, бірінші сабақты бастаңыз. Ұстаз академиясында {{ suggested.title|default:"екі курс" }} күтіп тұр.
+      </p>
+      {% if suggested %}
+        <a class="btn btn-primary btn-lg" href="{{ suggested.get_absolute_url }}">«{{ suggested.title }}» курсын ашу →</a>
+      {% endif %}
+      <div style="margin-top: 10px;">
+        <a class="btn btn-ghost" href="{% url 'courses:catalog' %}">Барлық курстарды қарау</a>
+      </div>
+    </div>
+  {% else %}
+    <div class="row" style="margin-top: 28px; align-items: flex-start;">
+      <div style="flex: 2; min-width: 320px;">
+        <h2 style="margin-bottom: 16px;">Менің курстарым</h2>
+        {% for d in enrollment_details %}
+          <div class="card" style="margin-bottom: 16px;" x-data="{open: false}">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+              <div style="flex:1; min-width: 180px;">
+                <a href="{{ d.enrollment.course.get_absolute_url }}"><strong>{{ d.enrollment.course.title }}</strong></a>
+                <div class="small muted">{{ d.modules|length }} модуль</div>
+              </div>
+              <span class="pill" style="background: var(--primary); color: white;">{{ d.overall_pct }}%</span>
+            </div>
+            <div class="progress" style="margin: 10px 0;"><div style="width: {{ d.overall_pct }}%"></div></div>
+            <button @click="open = !open" class="btn btn-ghost btn-sm" style="margin-top: 4px;">
+              <span x-show="!open">▾ Модульдер бойынша</span>
+              <span x-show="open" x-cloak>▴ Жасыру</span>
+            </button>
+            <div x-show="open" x-cloak style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);">
+              {% for mp in d.modules %}
+                <div style="display:flex; align-items:center; gap:12px; padding: 6px 0;">
+                  <span style="flex-shrink:0; width: 28px; height: 28px; border-radius: 50%; background: {% if mp.pct == 100 %}var(--success){% elif mp.pct > 0 %}var(--primary){% else %}var(--line){% endif %}; color: white; display:inline-flex; align-items:center; justify-content:center; font-size: 12px; font-weight: 700;">{{ mp.module.order }}</span>
+                  <div style="flex:1; min-width:0;">
+                    <a href="{% if mp.module.lessons.first %}{{ mp.module.lessons.first.get_absolute_url }}{% else %}{{ d.enrollment.course.get_absolute_url }}{% endif %}" style="font-weight:600; font-size: 14px;">{{ mp.module.title|truncatechars:55 }}</a>
+                    <div class="small muted">{{ mp.done }} / {{ mp.total }} сабақ</div>
+                  </div>
+                  <div style="width: 100px;">
+                    <div class="progress" style="height: 4px;"><div style="width: {{ mp.pct }}%; background: {% if mp.pct == 100 %}var(--success){% else %}var(--gradient){% endif %};"></div></div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+        <div>
+          <a class="btn btn-ghost btn-sm" href="{% url 'courses:catalog' %}">+ Тағы курс таңдау</a>
+        </div>
+      </div>
+
+      <div style="flex: 1; min-width: 240px;">
+        <h2 style="margin-bottom: 16px;">Соңғы белсенділік</h2>
+        {% for p in recent_lessons %}
+          <div class="card" style="margin-bottom: 10px;">
+            <div class="small muted">{{ p.completed_at|naturaltime }}</div>
+            <a href="{{ p.lesson.get_absolute_url }}">{{ p.lesson.title|truncatechars:50 }}</a>
+            <div class="small muted">{{ p.lesson.module.course.title|truncatechars:40 }}</div>
+          </div>
+        {% empty %}
+          <div class="card">
+            <p class="muted small" style="margin:0;">Әзірге белсенділік жоқ. Бірінші сабақты бастаңыз — XP мен streak жинай бастайсыз.</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

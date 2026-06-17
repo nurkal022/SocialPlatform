@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Курстар каталогы{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>Курстар каталогы</h1>
+  <form method="get" class="row" style="margin: 14px 0 28px; align-items: end;">
+    <div style="flex: 2;">
+      <label class="small muted">Іздеу</label>
+      <input name="q" value="{{ q }}" placeholder="Курс атауы, тег..." style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px;">
+    </div>
+    <div>
+      <label class="small muted">Деңгей</label>
+      <select name="level" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px;">
+        <option value="">Барлығы</option>
+        {% for code, label in levels %}
+          <option value="{{ code }}" {% if level == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="small muted">Тіл</label>
+      <select name="lang" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px;">
+        <option value="">Барлығы</option>
+        <option value="kk" {% if lang == 'kk' %}selected{% endif %}>Қазақша</option>
+        <option value="ru" {% if lang == 'ru' %}selected{% endif %}>Русский</option>
+      </select>
+    </div>
+    <div>
+      <label class="small muted">Сұрыптау</label>
+      <select name="sort" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:8px;">
+        <option value="popular" {% if sort == 'popular' %}selected{% endif %}>Танымал</option>
+        <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Жаңа</option>
+        <option value="rating" {% if sort == 'rating' %}selected{% endif %}>Жоғары рейтинг</option>
+        <option value="shortest" {% if sort == 'shortest' %}selected{% endif %}>Қысқа</option>
+      </select>
+    </div>
+    <button class="btn btn-primary">Іздеу</button>
+  </form>
+
+  <div class="course-grid">
+    {% for course in courses %}
+      <a class="course-card" href="{{ course.get_absolute_url }}">
+        <div class="course-cover">
+          {% if course.cover %}<img src="{{ course.cover.url }}" alt="">{% else %}{{ course.title|truncatechars:50 }}{% endif %}
+        </div>
+        <div class="course-body">
+          <h3 class="course-title">{{ course.title }}</h3>
+          <div class="course-meta">
+            <span class="pill">{{ course.get_level_display }}</span>
+            <span class="muted">{{ course.lesson_count }} сабақ</span>
+            <span class="muted">{{ course.duration_hours }} сағ</span>
+          </div>
+          <div class="course-desc">{{ course.short_description }}</div>
+        </div>
+      </a>
+    {% empty %}
+      <p>Сұранысыңыз бойынша курс табылмады.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

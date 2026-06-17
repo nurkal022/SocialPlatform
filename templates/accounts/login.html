@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Кіру{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 460px;">
+  <h1>Кіру</h1>
+  <form method="post" class="form">{% csrf_token %}
+    {{ form.non_field_errors }}
+    <div>
+      <label>Логин</label>
+      {{ form.username }}
+      {{ form.username.errors }}
+    </div>
+    <div>
+      <label>Құпиясөз</label>
+      {{ form.password }}
+      {{ form.password.errors }}
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Кіру</button>
+    <p class="small">Тіркелгі жоқ па? <a href="{% url 'accounts:signup' %}">Тіркелу</a></p>
+  </form>
+</div>
+{% endblock %}

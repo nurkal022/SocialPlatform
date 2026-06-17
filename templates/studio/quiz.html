@@ -1,0 +1,213 @@
+{% extends "studio/_base.html" %}
+{% block title %}Студио — {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="container" x-data="quizEditor()" x-init="init()">
+
+  <div class="st-crumbs">
+    <a href="{{ back_url }}">← {{ back_title|truncatechars:40 }}</a>
+    <span class="muted"> / {{ scope_label }}</span>
+  </div>
+
+  {# Quiz settings panel #}
+  <div class="st-panel">
+    <div class="st-panel-head">
+      <div>
+        <div class="st-eyebrow">{{ kind_label }}</div>
+        <h2 style="margin: 2px 0 0;" x-text="`${questions.length} сұрақ`"></h2>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        {% if quiz.kind == 'module' %}
+          <a href="{% url 'assessments:quiz_start' quiz.id %}" target="_blank" class="btn btn-ghost btn-sm">↗ Көру</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="st-meta-grid">
+      <div class="st-field">
+        <label>Атауы</label>
+        <input type="text" value="{{ quiz.title }}" @change="updateQuiz('title', $event.target.value)">
+      </div>
+      <div class="st-field">
+        <label>Сипаттама (қалауыңызша)</label>
+        <textarea rows="2" @change="updateQuiz('description', $event.target.value)">{{ quiz.description }}</textarea>
+      </div>
+      <div class="st-field-row">
+        <div class="st-field">
+          <label>Өту шегі (%)</label>
+          <input type="number" min="0" max="100" value="{{ quiz.pass_pct }}" @change="updateQuiz('pass_pct', $event.target.value)">
+        </div>
+        <div class="st-field">
+          <label>Уақыты (мин, 0 = шектеусіз)</label>
+          <input type="number" min="0" value="{{ quiz.time_limit_minutes }}" @change="updateQuiz('time_limit_minutes', $event.target.value)">
+        </div>
+        <div class="st-field">
+          <label>Cooldown (мин)</label>
+          <input type="number" min="0" value="{{ quiz.cooldown_minutes }}" @change="updateQuiz('cooldown_minutes', $event.target.value)">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Questions list #}
+  <div class="st-panel">
+    <div class="st-panel-head">
+      <h2 style="margin:0;">Сұрақтар</h2>
+      <button type="button" class="btn btn-primary" @click="addQuestion()" :disabled="adding">
+        <span x-show="!adding">+ Сұрақ қосу</span>
+        <span x-show="adding" x-cloak>...</span>
+      </button>
+    </div>
+
+    <div x-show="questions.length === 0" x-cloak class="st-empty">
+      <div style="font-size:42px;">❓</div>
+      <p>Әлі сұрақ жоқ. «+ Сұрақ қосу» арқылы алғашқысын қосыңыз.</p>
+    </div>
+
+    <div class="st-questions">
+      <template x-for="(q, idx) in questions" :key="q.id">
+        <div class="st-question">
+          <div class="st-q-head">
+            <div class="st-q-num" x-text="idx + 1"></div>
+            <div class="st-q-spacer"></div>
+            <span class="st-q-saved muted small" x-show="q._saved" x-cloak>✓ сақталды</span>
+            <button type="button" class="st-icon-btn" @click="deleteQuestion(idx)" title="Жою">🗑</button>
+          </div>
+
+          <div class="st-q-body">
+            <div class="st-field">
+              <label>Сұрақ мәтіні</label>
+              <textarea rows="2" x-model="q.text" @input="markDirty(q)" @change="saveQuestion(q)"
+                        placeholder="Мысалы: Педагогика ғылымының басты зерттеу нысаны қандай?"></textarea>
+            </div>
+
+            <div class="st-field">
+              <label>Жауап нұсқалары (дұрысын ⚪ арқылы белгілеңіз)</label>
+              <template x-for="(ch, ci) in q.choices" :key="ci">
+                <div class="st-q-choice">
+                  <input type="radio" :name="`correct-${q.id}`" :value="ci" :checked="q.correct === ci"
+                         @change="q.correct = ci; markDirty(q); saveQuestion(q)">
+                  <input type="text" x-model="q.choices[ci]" @input="markDirty(q)" @change="saveQuestion(q)"
+                         :placeholder="`Нұсқа ${ci + 1}`"
+                         :class="{ 'is-correct': q.correct === ci }">
+                  <button type="button" class="st-icon-btn"
+                          @click="q.choices.splice(ci, 1); if (q.correct >= q.choices.length) q.correct = 0; markDirty(q); saveQuestion(q)"
+                          :disabled="q.choices.length <= 2"
+                          title="Жою">✕</button>
+                </div>
+              </template>
+              <button type="button" class="btn btn-ghost btn-sm"
+                      @click="q.choices.push(''); markDirty(q)"
+                      :disabled="q.choices.length >= 6"
+                      style="margin-top:4px;">+ Нұсқа</button>
+            </div>
+
+            <div class="st-field">
+              <label>Дұрыс жауаптың түсіндірмесі (тестен кейін көрсетіледі)</label>
+              <textarea rows="2" x-model="q.explanation" @input="markDirty(q)" @change="saveQuestion(q)"
+                        placeholder="Неліктен бұл нұсқа дұрыс?"></textarea>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <div style="margin-top: 18px;">
+    <a href="{{ back_url }}" class="btn btn-ghost">← Курсқа қайту</a>
+  </div>
+</div>
+
+<div class="st-toast" x-data="{show: false, text: ''}"
+     x-show="show" x-cloak x-transition.opacity
+     @studio-toast.window="text = $event.detail; show = true; setTimeout(() => show = false, 2000)">
+  <span x-text="text"></span>
+</div>
+
+<script id="quiz-init" type="application/json">{{ initial_json|safe }}</script>
+<script>
+function quizEditor() {
+  const quizId = {{ quiz.id }};
+  const initial = JSON.parse(document.getElementById("quiz-init").textContent);
+
+  function toast(text) {
+    window.dispatchEvent(new CustomEvent("studio-toast", {detail: text}));
+  }
+
+  return {
+    questions: [],
+    adding: false,
+    init() {
+      this.questions = (initial.questions || []).map(q => ({...q, _saved: false, _dirty: false, _saveTimer: null}));
+    },
+    markDirty(q) { q._dirty = true; q._saved = false; },
+
+    async updateQuiz(field, value) {
+      const fd = new FormData(); fd.append("field", field); fd.append("value", value);
+      const r = await fetch(`/courses/studio/quiz/${quizId}/update/`, {
+        method: "POST", headers: {"X-CSRFToken": window.csrfToken()}, body: fd,
+      });
+      const j = await r.json();
+      toast(j.ok ? "✓ Сақталды" : `Қате: ${j.error}`);
+    },
+
+    async addQuestion() {
+      this.adding = true;
+      try {
+        const r = await fetch(`/courses/studio/quiz/${quizId}/question/add/`, {
+          method: "POST", headers: {"X-CSRFToken": window.csrfToken()},
+        });
+        const j = await r.json();
+        if (j.ok) {
+          this.questions.push({...j.question, _saved: false, _dirty: false, _saveTimer: null});
+          toast("✓ Сұрақ қосылды");
+          // scroll to the new card
+          this.$nextTick(() => {
+            const cards = document.querySelectorAll(".st-question");
+            if (cards.length) cards[cards.length - 1].scrollIntoView({behavior: "smooth", block: "center"});
+          });
+        } else {
+          toast(`Қате: ${j.error || "белгісіз"}`);
+        }
+      } finally { this.adding = false; }
+    },
+
+    saveQuestion(q) {
+      // debounce 600ms after last edit
+      if (q._saveTimer) clearTimeout(q._saveTimer);
+      q._saveTimer = setTimeout(async () => {
+        const payload = {
+          text: q.text, explanation: q.explanation, points: q.points,
+          choices: q.choices, correct: q.correct,
+        };
+        try {
+          const r = await fetch(`/courses/studio/q/${q.id}/update/`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json", "X-CSRFToken": window.csrfToken()},
+            body: JSON.stringify(payload),
+          });
+          const j = await r.json();
+          if (j.ok) { q._dirty = false; q._saved = true; setTimeout(() => q._saved = false, 1500); }
+          else toast(`Қате: ${j.error}`);
+        } catch (e) {
+          toast(`Қате: ${e}`);
+        }
+      }, 600);
+    },
+
+    async deleteQuestion(idx) {
+      const q = this.questions[idx];
+      if (!confirm("Сұрақты жоюды растайсыз ба?")) return;
+      try {
+        const r = await fetch(`/courses/studio/q/${q.id}/delete/`, {
+          method: "POST", headers: {"X-CSRFToken": window.csrfToken()},
+        });
+        const j = await r.json();
+        if (j.ok) { this.questions.splice(idx, 1); toast("✓ Жойылды"); }
+        else toast(`Қате: ${j.error}`);
+      } catch (e) { toast(`Қате: ${e}`); }
+    },
+  };
+}
+</script>
+{% endblock %}

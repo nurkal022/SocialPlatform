@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+db.sqlite3
+db.sqlite3-journal
+db.sqlite3-wal
+db.sqlite3-shm
+media/
+staticfiles/
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+# stray screenshot
+image.png

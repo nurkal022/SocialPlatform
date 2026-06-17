@@ -1,0 +1,259 @@
+{% extends "studio/_base.html" %}
+{% block title %}Студио — {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container st-course-page" x-data="courseEditor()">
+  <div class="st-crumbs">
+    <a href="{% url 'courses:studio_dashboard' %}">← Барлық курстар</a>
+  </div>
+
+  {# ===== Course meta panel ===== #}
+  <div class="st-panel">
+    <div class="st-panel-head">
+      <div class="st-eyebrow">Курс мәліметтері</div>
+      <div style="display:flex; gap:8px;">
+        <a href="{{ course.get_absolute_url }}" target="_blank" class="btn btn-ghost btn-sm">↗ Көру</a>
+        <form method="post" action="{% url 'courses:studio_course_delete' course.slug %}"
+              onsubmit="return confirm('Курсты толық жоюды растайсыз ба? Барлық модульдер мен сабақтар жойылады.');" style="display:inline;">
+          {% csrf_token %}
+          <button class="btn btn-ghost btn-sm" style="color: var(--danger);">🗑 Жою</button>
+        </form>
+      </div>
+    </div>
+    <div class="st-meta-grid">
+      <div class="st-field">
+        <label>Атауы</label>
+        <input type="text" value="{{ course.title }}"
+               @change="updateCourse('title', $event.target.value)">
+      </div>
+      <div class="st-field">
+        <label>Қысқа сипаттама</label>
+        <textarea rows="2" @change="updateCourse('short_description', $event.target.value)">{{ course.short_description }}</textarea>
+      </div>
+      <div class="st-field">
+        <label>Толық сипаттама</label>
+        <textarea rows="4" @change="updateCourse('description', $event.target.value)">{{ course.description }}</textarea>
+      </div>
+      <div class="st-field-row">
+        <div class="st-field">
+          <label>Деңгей</label>
+          <select @change="updateCourse('level', $event.target.value)">
+            {% for code, label in course.Level.choices %}
+              <option value="{{ code }}" {% if course.level == code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="st-field">
+          <label>Сағат</label>
+          <input type="number" min="1" value="{{ course.duration_hours }}"
+                 @change="updateCourse('duration_hours', $event.target.value)">
+        </div>
+        <div class="st-field">
+          <label>Тегтер (үтірмен)</label>
+          <input type="text" value="{{ course.tags }}"
+                 @change="updateCourse('tags', $event.target.value)">
+        </div>
+      </div>
+      <div class="st-field-toggles">
+        <label class="st-toggle">
+          <input type="checkbox" {% if course.is_published %}checked{% endif %}
+                 @change="updateCourse('is_published', $event.target.checked ? '1' : '0')">
+          <span>Жарияланған</span>
+        </label>
+        <label class="st-toggle">
+          <input type="checkbox" {% if course.has_final_exam %}checked{% endif %}
+                 @change="updateCourse('has_final_exam', $event.target.checked ? '1' : '0')">
+          <span>Финалдық емтиханы бар</span>
+        </label>
+        <a class="btn btn-ghost btn-sm" href="{% url 'courses:studio_quiz_final' course.slug %}">
+          🏁 Финалдық емтиханды редакциялау →
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {# ===== Modules / lessons tree ===== #}
+  <div class="st-panel">
+    <div class="st-panel-head">
+      <div>
+        <div class="st-eyebrow">Курс құрылымы</div>
+        <h2 style="margin: 2px 0 0;">Модульдер мен сабақтар</h2>
+      </div>
+      <button type="button" class="btn btn-primary" @click="newModuleOpen = !newModuleOpen; $nextTick(() => $refs.newModuleInput && $refs.newModuleInput.focus())">
+        <span x-show="!newModuleOpen">+ Модуль қосу</span>
+        <span x-show="newModuleOpen" x-cloak>✕ Болдырмау</span>
+      </button>
+    </div>
+
+    {# Inline form for new module #}
+    <div class="st-inline-form" x-show="newModuleOpen" x-cloak>
+      <input type="text" x-ref="newModuleInput" x-model="newModuleTitle"
+             placeholder="Жаңа модульдің атауы..." @keydown.enter.prevent="submitModule()" @keydown.escape="newModuleOpen = false">
+      <button type="button" class="btn btn-primary btn-sm" @click="submitModule()" :disabled="!newModuleTitle.trim() || busy">
+        <span x-show="!busy">Қосу</span>
+        <span x-show="busy" x-cloak>...</span>
+      </button>
+    </div>
+
+    {% if not modules %}
+      <div class="st-empty">
+        <div style="font-size:42px;">📂</div>
+        <p>Әлі модуль жоқ. Бірінші модульді қосудан бастаңыз.</p>
+      </div>
+    {% endif %}
+
+    <div class="st-modules">
+      {% for m in modules %}
+        <details class="st-module" {% if forloop.first %}open{% endif %} data-id="{{ m.id }}">
+          <summary class="st-module-head">
+            <div class="st-module-num">{{ m.order }}</div>
+            <input type="text" value="{{ m.title }}" class="st-module-title-input"
+                   @click.stop @change="updateModule({{ m.id }}, 'title', $event.target.value)">
+            <div class="st-module-actions">
+              <span class="st-count">{{ m.lessons.count }} сабақ</span>
+              <button type="button" class="st-icon-btn" @click.stop="deleteModule({{ m.id }})" title="Жою">🗑</button>
+              <span class="st-chev">▾</span>
+            </div>
+          </summary>
+          <div class="st-module-body">
+            <div class="st-field">
+              <label>Сипаттама</label>
+              <textarea rows="2" @change="updateModule({{ m.id }}, 'summary', $event.target.value)">{{ m.summary }}</textarea>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <label class="st-toggle">
+                <input type="checkbox" {% if m.has_test %}checked{% endif %}
+                       @change="updateModule({{ m.id }}, 'has_test', $event.target.checked ? '1' : '0')">
+                <span>Модуль тесті бар</span>
+              </label>
+              <a class="btn btn-ghost btn-sm" href="{% url 'courses:studio_quiz_module' m.id %}">
+                📝 Тестті редакциялау →
+              </a>
+            </div>
+
+            <div class="st-lessons">
+              {% for l in m.lessons.all %}
+                <div class="st-lesson" data-id="{{ l.id }}">
+                  <span class="st-lesson-icon">📖</span>
+                  <a class="st-lesson-link" href="{% url 'courses:studio_lesson' l.id %}">{{ l.title }}</a>
+                  <span class="st-lesson-meta">{{ l.duration_minutes }} мин · {{ l.content|length }} блок</span>
+                  <div class="st-lesson-actions">
+                    <a href="{% url 'courses:studio_lesson' l.id %}" class="st-icon-btn" title="Редакциялау">✏️</a>
+                    <button type="button" class="st-icon-btn" @click="deleteLesson({{ l.id }})" title="Жою">🗑</button>
+                  </div>
+                </div>
+              {% endfor %}
+              <div x-data="{open: false, title: ''}">
+                <button type="button" class="st-add-lesson"
+                        x-show="!open"
+                        @click="open = true; $nextTick(() => $refs.li{{ m.id }} && $refs.li{{ m.id }}.focus())">
+                  + Сабақ қосу
+                </button>
+                <div class="st-inline-form" x-show="open" x-cloak>
+                  <input type="text" x-ref="li{{ m.id }}" x-model="title"
+                         placeholder="Жаңа сабақтың атауы..."
+                         @keydown.enter.prevent="title.trim() && submitLesson({{ m.id }}, title)"
+                         @keydown.escape="open = false; title = ''">
+                  <button type="button" class="btn btn-primary btn-sm"
+                          @click="submitLesson({{ m.id }}, title)"
+                          :disabled="!title.trim() || busy">Қосу</button>
+                  <button type="button" class="btn btn-ghost btn-sm" @click="open = false; title = ''">✕</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </details>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="st-toast" x-data="{show: false, text: ''}"
+     x-show="show" x-cloak x-transition.opacity
+     @studio-toast.window="text = $event.detail; show = true; setTimeout(() => show = false, 2000)">
+  <span x-text="text"></span>
+</div>
+
+<script>
+function courseEditor() {
+  const courseSlug = "{{ course.slug }}";
+  function toast(text) {
+    window.dispatchEvent(new CustomEvent("studio-toast", {detail: text}));
+  }
+  async function post(url, formData) {
+    const r = await fetch(url, {
+      method: "POST",
+      headers: {"X-CSRFToken": window.csrfToken()},
+      body: formData,
+    });
+    if (!r.ok) {
+      let msg = `HTTP ${r.status}`;
+      try { const j = await r.json(); if (j.error) msg += ` — ${j.error}`; } catch (e) {}
+      return {ok: false, error: msg};
+    }
+    return r.json();
+  }
+  return {
+    // inline-form state
+    newModuleOpen: false,
+    newModuleTitle: "",
+    busy: false,
+
+    async updateCourse(field, value) {
+      const fd = new FormData(); fd.append("field", field); fd.append("value", value);
+      const j = await post(`/courses/studio/c/${courseSlug}/update/`, fd);
+      toast(j.ok ? "✓ Сақталды" : `Қате: ${j.error}`);
+    },
+    async updateModule(id, field, value) {
+      const fd = new FormData(); fd.append("field", field); fd.append("value", value);
+      const j = await post(`/courses/studio/m/${id}/update/`, fd);
+      toast(j.ok ? "✓ Сақталды" : `Қате: ${j.error}`);
+    },
+    async submitModule() {
+      const title = this.newModuleTitle.trim();
+      if (!title || this.busy) return;
+      this.busy = true;
+      try {
+        const fd = new FormData(); fd.append("title", title);
+        const j = await post(`/courses/studio/c/${courseSlug}/module/add/`, fd);
+        if (j.ok) {
+          this.newModuleTitle = "";
+          this.newModuleOpen = false;
+          toast("✓ Модуль қосылды");
+          setTimeout(() => location.reload(), 400);
+        } else {
+          toast(`Қате: ${j.error}`);
+        }
+      } finally { this.busy = false; }
+    },
+    async deleteModule(id) {
+      if (!confirm("Модульді және барлық сабақтарын жоюды растайсыз ба?")) return;
+      const j = await post(`/courses/studio/m/${id}/delete/`, new FormData());
+      if (j.ok) location.reload();
+      else toast(`Қате: ${j.error}`);
+    },
+    async submitLesson(moduleId, title) {
+      const t = (title || "").trim();
+      if (!t || this.busy) return;
+      this.busy = true;
+      try {
+        const fd = new FormData(); fd.append("title", t);
+        const j = await post(`/courses/studio/m/${moduleId}/lesson/add/`, fd);
+        if (j.ok) {
+          toast("✓ Сабақ қосылды");
+          setTimeout(() => location.href = j.url, 200);
+        } else {
+          toast(`Қате: ${j.error}`);
+        }
+      } finally { this.busy = false; }
+    },
+    async deleteLesson(id) {
+      if (!confirm("Сабақты жоюды растайсыз ба?")) return;
+      const j = await post(`/courses/studio/l/${id}/delete/`, new FormData());
+      if (j.ok) location.reload();
+      else toast(`Қате: ${j.error}`);
+    },
+  };
+}
+</script>
+{% endblock %}

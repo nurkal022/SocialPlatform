@@ -1,0 +1,21 @@
+{
+  "name": "Ұстаз — болашақ ұстаздарға арналған академия",
+  "short_name": "Ұстаз",
+  "description": "Қазақ тіліндегі педагогика курстары, кейстер, ИИ-әдіскер.",
+  "start_url": "/dashboard/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#2563eb",
+  "background_color": "#f8fbff",
+  "lang": "kk",
+  "icons": [
+    {
+      "src": "/static/img/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education"]
+}

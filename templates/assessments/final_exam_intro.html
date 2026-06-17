@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Финалдық емтихан — {{ quiz.course.title }}{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 720px;">
+  <div class="small muted" style="margin-bottom: 8px;">
+    <a href="{{ quiz.course.get_absolute_url }}">← {{ quiz.course.title }}</a>
+  </div>
+
+  <div class="card" style="border: 2px solid var(--accent); padding: 32px;">
+    <div style="text-align:center; margin-bottom: 24px;">
+      <div style="font-size: 56px;">🏁</div>
+      <h1 style="margin: 12px 0 6px;">Финалдық емтихан</h1>
+      <p class="muted">«{{ quiz.course.title }}»</p>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="label">Сұрақтар</div>
+        <div class="value">{{ quiz.questions.count }}</div>
+      </div>
+      <div class="stat">
+        <div class="label">Уақыты</div>
+        <div class="value">{% if quiz.time_limit_minutes %}{{ quiz.time_limit_minutes }} мин{% else %}∞{% endif %}</div>
+      </div>
+      <div class="stat">
+        <div class="label">Өту шегі</div>
+        <div class="value">{{ quiz.pass_pct }}%</div>
+      </div>
+    </div>
+
+    <div style="background: #fffbeb; border-left: 4px solid var(--accent); padding: 16px 18px; border-radius: 0 10px 10px 0; margin: 20px 0;">
+      <strong>⚠️ Назар аударыңыз:</strong>
+      <ul style="margin: 8px 0 0; padding-left: 20px; line-height: 1.7;">
+        {% if quiz.time_limit_minutes %}
+          <li><strong>Таймер</strong> бастаған сәттен басталады. Уақыт біткенде жұмыс автоматты түрде тапсырылады.</li>
+        {% endif %}
+        <li>Қайталау арасында <strong>{{ quiz.cooldown_minutes }} минут</strong> күту керек.</li>
+        <li>Өту үшін <strong>{{ quiz.pass_pct }}%</strong> жинау керек.</li>
+        <li>Өткен соң — расталған PDF сертификат аласыз.</li>
+      </ul>
+    </div>
+
+    {% if prev_best %}
+      <div style="background: var(--primary-50); padding: 14px 16px; border-radius: 10px; margin-bottom: 20px;">
+        <strong>Алдыңғы әрекетіңіздің ең жақсы нәтижесі: {{ prev_best.score_pct }}%</strong>
+        {% if prev_best.is_passed %}
+          <span class="pill pill-success">Өттіңіз</span>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+      <a class="btn btn-ghost" href="{{ quiz.course.get_absolute_url }}">← Дайын емеспін</a>
+      <a class="btn btn-primary btn-lg" href="?confirm=1">Емтиханды бастау →</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

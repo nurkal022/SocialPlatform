@@ -1,0 +1,128 @@
+{% load static humanize %}<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}{{ PLATFORM_NAME }}{% endblock %} · {{ PLATFORM_NAME }}</title>
+<link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+<link rel="apple-touch-icon" href="{% static 'img/favicon.svg' %}">
+<link rel="manifest" href="{% static 'manifest.json' %}">
+<meta name="theme-color" content="#2563eb">
+<meta name="description" content="Болашақ ұстаздарға арналған цифрлық академия — педагогика, кейстер, ИИ-әдіскер, сертификат.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/app.css' %}">
+<script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+<script src="https://unpkg.com/alpinejs@3.13.10/dist/cdn.min.js" defer></script>
+{% block head_extra %}{% endblock %}
+</head>
+<body class="bg-cream">
+
+{% if IMPERSONATING %}
+<div class="impersonate-bar">
+  <div class="container impersonate-inner">
+    <span>
+      🎭 <strong>{{ IMPERSONATOR.display_name }}</strong> ретінде кірдіңіз,
+      бірақ қазір <strong>{{ user.display_name }}</strong> аккаунтын тестілеп жүрсіз.
+    </span>
+    <a class="btn btn-sm btn-ghost" href="{% url 'accounts:exit_become' %}">↩ Өз аккаунтыма қайту</a>
+  </div>
+</div>
+{% endif %}
+
+<header class="topbar" x-data="{mobileOpen: false}">
+  <div class="container topbar-inner">
+    <a href="{% url 'core:landing' %}" class="brand">
+      <span class="brand-mark">Ұ</span>
+      <span class="brand-name">{{ PLATFORM_NAME }}</span>
+    </a>
+    <button class="mobile-toggle" @click="mobileOpen = !mobileOpen" aria-label="Menu">
+      <span x-show="!mobileOpen">☰</span>
+      <span x-show="mobileOpen" x-cloak>✕</span>
+    </button>
+    <nav class="nav" :class="{'is-open': mobileOpen}" @click="mobileOpen = false">
+      <a href="{% url 'courses:catalog' %}">Курстар</a>
+      <a href="{% url 'assessments:cases' %}">Кейстер</a>
+      <a href="{% url 'gamification:leaderboard' %}">Лидерлер</a>
+      <a href="{% url 'social:best_solutions' %}">Үздіктер</a>
+      <a href="{% url 'core:about' %}">Жоба туралы</a>
+      {% if user.is_staff %}<a href="{% url 'courses:studio_dashboard' %}" class="nav-studio">🛠 Студио</a>{% endif %}
+    </nav>
+    <div class="nav-right">
+      {% if ROLE_SWITCHER_USERS %}
+        <div class="usermenu" x-data="{open:false}">
+          <button class="role-switcher-btn" @click="open=!open" title="Тестілеу үшін рөл ауыстыру">
+            🎭 <span class="role-switcher-label">Рөл</span>
+          </button>
+          <div class="usermenu-drop role-switcher-drop" x-show="open" @click.outside="open=false" x-cloak>
+            <div class="role-switcher-hint">Тестілік аккаунтқа ауысу:</div>
+            {% for ru in ROLE_SWITCHER_USERS %}
+              <a href="{% url 'accounts:become' ru.username %}" class="role-switcher-row {% if ru.id == user.id %}is-current{% endif %}">
+                <span class="role-avatar">{{ ru.display_name|slice:":1"|upper }}</span>
+                <span class="role-info">
+                  <strong>{{ ru.display_name }}</strong>
+                  <span class="role-tag role-tag-{{ ru.role }}">
+                    {% if ru.is_superuser %}superuser{% elif ru.is_staff %}staff{% else %}{{ ru.get_role_display }}{% endif %}
+                  </span>
+                </span>
+                {% if ru.id == user.id %}<span class="role-current-dot">●</span>{% endif %}
+              </a>
+            {% endfor %}
+            {% if IMPERSONATING %}
+              <a href="{% url 'accounts:exit_become' %}" class="role-switcher-row role-switcher-exit">↩ Өз аккаунтыма қайту</a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+      {% if user.is_authenticated %}
+        {% if user.gprofile %}<span class="xp-pill">⚡ {{ user.gprofile.xp|intcomma }} XP · L{{ user.gprofile.level }}</span>{% endif %}
+        {% if user.streak %}<span class="streak-pill">🔥 {{ user.streak.current }}</span>{% endif %}
+        <div class="usermenu" x-data="{open:false}">
+          <button class="usermenu-btn" @click="open=!open">
+            {% if user.avatar %}<img src="{{ user.avatar.url }}" alt="">{% else %}<span class="avatar-fallback">{{ user.display_name|slice:":1"|upper }}</span>{% endif %}
+            <span>{{ user.display_name }}</span>
+          </button>
+          <div class="usermenu-drop" x-show="open" @click.outside="open=false" x-cloak>
+            <a href="{% url 'core:dashboard' %}">Менің панелім</a>
+            <a href="{% url 'accounts:profile' user.username %}">Профиль</a>
+            <a href="{% url 'gamification:me' %}">Прогресс</a>
+            <a href="{% url 'accounts:edit_profile' %}">Баптаулар</a>
+            {% if user.is_staff %}<a href="/admin/">Әкімші панелі</a>{% endif %}
+            <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">Шығу</button></form>
+          </div>
+        </div>
+      {% else %}
+        <a class="btn btn-ghost" href="{% url 'accounts:login' %}">Кіру</a>
+        <a class="btn btn-primary" href="{% url 'accounts:signup' %}">Тіркелу</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+{% if messages %}
+<div class="container">
+  <ul class="messages">
+    {% for m in messages %}<li class="msg msg-{{ m.tags }}">{{ m }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<main class="main">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div>
+      <strong>{{ PLATFORM_NAME }}</strong> · {{ PLATFORM_TAGLINE }}
+    </div>
+    <div>
+      <a href="{% url 'core:about' %}">Жоба туралы</a>
+    </div>
+  </div>
+</footer>
+
+<script src="{% static 'js/app.js' %}" defer></script>
+</body>
+</html>

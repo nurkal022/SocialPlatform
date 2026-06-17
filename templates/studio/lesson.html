@@ -1,0 +1,270 @@
+{% extends "studio/_base.html" %}
+{% block title %}Студио — {{ lesson.title }}{% endblock %}
+
+{% block content %}
+<div class="container st-lesson-page" x-data="lessonEditor()" x-init="init()">
+  <div class="st-crumbs">
+    <a href="{% url 'courses:studio_course' lesson.module.course.slug %}">← {{ lesson.module.course.title|truncatechars:40 }}</a>
+    <span class="muted"> / Модуль {{ lesson.module.order }} / Сабақ</span>
+  </div>
+
+  {# Lesson meta — header bar #}
+  <div class="st-panel">
+    <div class="st-meta-grid">
+      <div class="st-field">
+        <label>Сабақ атауы</label>
+        <input type="text" value="{{ lesson.title }}"
+               @change="updateField('title', $event.target.value)">
+      </div>
+      <div class="st-field">
+        <label>Қысқа сипаттама</label>
+        <input type="text" value="{{ lesson.summary }}"
+               @change="updateField('summary', $event.target.value)">
+      </div>
+      <div class="st-field-row">
+        <div class="st-field">
+          <label>Ұзақтығы (мин)</label>
+          <input type="number" min="1" value="{{ lesson.duration_minutes }}"
+                 @change="updateField('duration_minutes', $event.target.value)">
+        </div>
+        <div class="st-field" style="flex:2;">
+          <label>Видео URL (YouTube)</label>
+          <input type="url" value="{{ lesson.video_url }}" placeholder="https://www.youtube.com/watch?v=..."
+                 @change="updateField('video_url', $event.target.value)">
+        </div>
+      </div>
+      <label class="st-toggle">
+        <input type="checkbox" {% if lesson.is_free_preview %}checked{% endif %}
+               @change="updateField('is_free_preview', $event.target.checked ? '1' : '0')">
+        <span>Тегін көру (тіркелусіз қол жетімді)</span>
+      </label>
+    </div>
+  </div>
+
+  {# Content blocks editor #}
+  <div class="st-panel">
+    <div class="st-panel-head">
+      <div>
+        <div class="st-eyebrow">Сабақ мазмұны</div>
+        <h2 style="margin: 2px 0 0;">Блоктар <span class="muted" x-text="`(${blocks.length})`"></span></h2>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span x-show="dirty" x-cloak class="muted small">● Сақталмаған өзгерістер</span>
+        <button type="button" class="btn btn-primary" @click="saveContent()" :disabled="saving">
+          <span x-show="!saving">💾 Сақтау</span>
+          <span x-show="saving" x-cloak>...</span>
+        </button>
+        <a href="{{ lesson.get_absolute_url }}" target="_blank" class="btn btn-ghost">↗ Көру</a>
+      </div>
+    </div>
+
+    {# Block list #}
+    <div class="st-blocks">
+      <template x-for="(b, i) in blocks" :key="b._id">
+        <div class="st-block" :class="`st-block-${b.type}`">
+          <div class="st-block-tools">
+            <button type="button" class="st-icon-btn" @click="move(i, -1)" :disabled="i === 0" title="Жоғары">↑</button>
+            <button type="button" class="st-icon-btn" @click="move(i, 1)" :disabled="i === blocks.length - 1" title="Төмен">↓</button>
+            <span class="st-block-type" x-text="typeLabel(b.type)"></span>
+            <button type="button" class="st-icon-btn" @click="remove(i)" title="Жою">🗑</button>
+          </div>
+
+          {# Per-type editor #}
+          <template x-if="b.type === 'paragraph'">
+            <textarea class="st-block-input" rows="3" placeholder="Параграф мәтіні..."
+                      x-model="b.value" @input="dirty = true"></textarea>
+          </template>
+          <template x-if="b.type === 'heading'">
+            <input class="st-block-input st-block-heading-input" type="text" placeholder="Заголовок..."
+                   x-model="b.value" @input="dirty = true">
+          </template>
+          <template x-if="b.type === 'term'">
+            <div class="st-block-term-grid">
+              <input type="text" placeholder="Термин..." x-model="b.value.name" @input="dirty = true">
+              <textarea rows="2" placeholder="Анықтамасы..." x-model="b.value.definition" @input="dirty = true"></textarea>
+            </div>
+          </template>
+          <template x-if="b.type === 'callout'">
+            <textarea class="st-block-input" rows="2" placeholder="💡 Кеңес немесе мысал..."
+                      x-model="b.value" @input="dirty = true"></textarea>
+          </template>
+          <template x-if="b.type === 'list'">
+            <div>
+              <template x-for="(item, idx) in b.value" :key="idx">
+                <div style="display:flex; gap:6px; margin-bottom:4px;">
+                  <input type="text" :value="item" x-model="b.value[idx]" @input="dirty = true"
+                         style="flex:1; padding:8px 10px; border:1.5px solid var(--line); border-radius:6px;">
+                  <button type="button" class="st-icon-btn" @click="b.value.splice(idx, 1); dirty = true">✕</button>
+                </div>
+              </template>
+              <button type="button" class="btn btn-ghost btn-sm" @click="b.value.push(''); dirty = true">+ Жол қосу</button>
+            </div>
+          </template>
+          <template x-if="b.type === 'video'">
+            <input class="st-block-input" type="url" placeholder="YouTube URL"
+                   :value="b.value && b.value.url" @input="b.value = {url: $event.target.value}; dirty = true">
+          </template>
+          <template x-if="b.type === 'question'">
+            <div class="st-block-q-grid">
+              <textarea rows="2" placeholder="Сұрақ мәтіні..."
+                        x-model="b.value.text" @input="dirty = true"></textarea>
+              <template x-for="(ch, idx) in b.value.choices" :key="idx">
+                <label style="display:flex; gap:8px; align-items:center; margin-bottom:4px;">
+                  <input type="radio" :name="`correct-${b._id}`" :value="idx"
+                         :checked="b.value.correct === idx"
+                         @change="b.value.correct = idx; dirty = true">
+                  <input type="text" x-model="b.value.choices[idx]" @input="dirty = true"
+                         :placeholder="`Вариант ${idx + 1}`"
+                         style="flex:1; padding:8px 10px; border:1.5px solid var(--line); border-radius:6px;">
+                  <button type="button" class="st-icon-btn"
+                          @click="b.value.choices.splice(idx, 1); if (b.value.correct >= b.value.choices.length) b.value.correct = 0; dirty = true">✕</button>
+                </label>
+              </template>
+              <button type="button" class="btn btn-ghost btn-sm"
+                      @click="b.value.choices.push(''); dirty = true"
+                      style="margin-bottom:8px;">+ Вариант</button>
+              <textarea rows="2" placeholder="Дұрыс жауаптың түсіндірмесі..."
+                        x-model="b.value.explanation" @input="dirty = true"></textarea>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <div x-show="blocks.length === 0" x-cloak class="st-empty">
+        <div style="font-size:42px;">✍️</div>
+        <p>Сабақ контентін блоктардан құрастырыңыз.</p>
+      </div>
+    </div>
+
+    {# Add block menu — keeps state on lessonEditor scope (not nested) #}
+    <div class="st-add-block" @click.outside="menuOpen = false">
+      <button type="button" class="btn btn-primary" @click="menuOpen = !menuOpen">+ Блок қосу</button>
+      <div class="st-add-menu" x-show="menuOpen" x-cloak>
+        <button type="button" @click="add('heading')">📌 Заголовок</button>
+        <button type="button" @click="add('paragraph')">📝 Параграф</button>
+        <button type="button" @click="add('term')">📖 Термин</button>
+        <button type="button" @click="add('callout')">💡 Callout</button>
+        <button type="button" @click="add('list')">📋 Тізім</button>
+        <button type="button" @click="add('question')">❓ Чекпоинт-сұрақ</button>
+        <button type="button" @click="add('video')">🎬 Видео</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 24px; display:flex; justify-content:space-between;">
+    <form method="post" action="{% url 'courses:studio_lesson_delete' lesson.id %}"
+          onsubmit="return confirm('Сабақты толық жоюды растайсыз ба?');" style="display:inline;">
+      {% csrf_token %}
+      <button class="btn btn-ghost" style="color: var(--danger);">🗑 Сабақты жою</button>
+    </form>
+    <a href="{% url 'courses:studio_course' lesson.module.course.slug %}" class="btn btn-ghost">← Курсқа қайту</a>
+  </div>
+</div>
+
+<div class="st-toast" x-data="{show: false, text: ''}"
+     x-show="show" x-cloak x-transition.opacity
+     @studio-toast.window="text = $event.detail; show = true; setTimeout(() => show = false, 2000)">
+  <span x-text="text"></span>
+</div>
+
+<script id="lesson-init" type="application/json">{{ initial_json|safe }}</script>
+<script>
+function lessonEditor() {
+  const lessonId = {{ lesson.id }};
+  let nextId = 1;
+  function wrap(arr) {
+    return (arr || []).map(b => ({...b, _id: nextId++}));
+  }
+  return {
+    blocks: [],
+    init() {
+      try {
+        const initial = JSON.parse(document.getElementById("lesson-init").textContent);
+        this.blocks = wrap(initial);
+      } catch (e) {
+        console.warn("bad lesson content", e);
+        this.blocks = [];
+      }
+    },
+    dirty: false,
+    saving: false,
+    menuOpen: false,
+    typeLabel(t) {
+      return {
+        heading: "📌 Заголовок",
+        paragraph: "📝 Параграф",
+        term: "📖 Термин",
+        callout: "💡 Callout",
+        list: "📋 Тізім",
+        question: "❓ Сұрақ",
+        video: "🎬 Видео",
+      }[t] || t;
+    },
+    add(type) {
+      const defaults = {
+        heading: {type: "heading", value: "Жаңа бөлім"},
+        paragraph: {type: "paragraph", value: ""},
+        term: {type: "term", value: {name: "", definition: ""}},
+        callout: {type: "callout", value: "💡 "},
+        list: {type: "list", value: [""]},
+        question: {type: "question", value: {text: "", choices: ["", "", "", ""], correct: 0, explanation: ""}},
+        video: {type: "video", value: {url: ""}},
+      };
+      const b = {...defaults[type], _id: nextId++};
+      this.blocks.push(b);
+      this.dirty = true;
+      this.menuOpen = false;
+      // scroll to new block so user sees it
+      this.$nextTick(() => {
+        const cards = document.querySelectorAll(".st-block");
+        if (cards.length) cards[cards.length - 1].scrollIntoView({behavior: "smooth", block: "center"});
+      });
+    },
+    remove(i) {
+      if (!confirm("Бұл блокты жою?")) return;
+      this.blocks.splice(i, 1);
+      this.dirty = true;
+    },
+    move(i, delta) {
+      const j = i + delta;
+      if (j < 0 || j >= this.blocks.length) return;
+      [this.blocks[i], this.blocks[j]] = [this.blocks[j], this.blocks[i]];
+      this.dirty = true;
+    },
+    async updateField(field, value) {
+      const fd = new FormData(); fd.append("field", field); fd.append("value", value);
+      const r = await fetch(`/courses/studio/l/${lessonId}/update/`, {
+        method: "POST",
+        headers: {"X-CSRFToken": window.csrfToken()},
+        body: fd,
+      });
+      const j = await r.json();
+      window.dispatchEvent(new CustomEvent("studio-toast",
+        {detail: j.ok ? "✓ Сақталды" : `Қате: ${j.error}`}));
+    },
+    async saveContent() {
+      this.saving = true;
+      // Strip _id before saving
+      const clean = this.blocks.map(({_id, ...rest}) => rest);
+      const fd = new FormData(); fd.append("content_json", JSON.stringify(clean));
+      try {
+        const r = await fetch(`/courses/studio/l/${lessonId}/update/`, {
+          method: "POST",
+          headers: {"X-CSRFToken": window.csrfToken()},
+          body: fd,
+        });
+        const j = await r.json();
+        if (j.ok) {
+          this.dirty = false;
+          window.dispatchEvent(new CustomEvent("studio-toast", {detail: "✓ Барлығы сақталды"}));
+        } else {
+          window.dispatchEvent(new CustomEvent("studio-toast", {detail: `Қате: ${j.error}`}));
+        }
+      } finally {
+        this.saving = false;
+      }
+    },
+  };
+}
+</script>
+{% endblock %}

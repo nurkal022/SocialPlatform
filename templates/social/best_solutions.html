@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Үздік шешімдер{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>Үздік кейс-шешімдер</h1>
+  <p class="muted">Студенттердің ИИ жоғары бағалаған және автормен бөлісуге келісім берген жауаптары.</p>
+
+  {% for s in submissions %}
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <a href="{% url 'assessments:case_detail' s.case.id %}"><strong>{{ s.case.title }}</strong></a>
+          · <span class="muted">{{ s.user.display_name }}</span>
+        </div>
+        <span class="pill pill-success">{{ s.score }}/100</span>
+      </div>
+      <p style="white-space:pre-wrap; margin-top:10px;">{{ s.response|truncatewords:60 }}</p>
+    </div>
+  {% empty %}
+    <p class="muted">Әзірге бөлісілген шешім жоқ.</p>
+  {% endfor %}
+</div>
+{% endblock %}

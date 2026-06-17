@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Менің прогресім{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>Менің прогресім</h1>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="label">XP барлығы</div><div class="value">{{ profile.xp|intcomma }}</div></div>
+    <div class="stat"><div class="label">Деңгей</div><div class="value">{{ profile.level }} / 50</div></div>
+    <div class="stat"><div class="label">Streak</div><div class="value">🔥 {{ streak.current }}</div></div>
+    <div class="stat"><div class="label">Ең ұзақ streak</div><div class="value">{{ streak.longest }}</div></div>
+  </div>
+
+  <div class="card">
+    <h3>Келесі деңгейге</h3>
+    <div class="progress" style="margin:8px 0;"><div style="width: {{ pct_to_next }}%"></div></div>
+    <p class="small muted">{{ into_level }} / {{ total_for_level }} XP (L{{ profile.level }} → L{% widthratio profile.level 1 1 %}{{ profile.level|add:1 }})</p>
+  </div>
+
+  <h2>Менің белгілерім</h2>
+  <div class="badge-grid">
+    {% for ub in badges %}
+      <div class="badge-card">
+        <div class="badge-icon">{{ ub.badge.icon }}</div>
+        <div><strong>{{ ub.badge.name }}</strong></div>
+        <div class="small muted">{{ ub.awarded_at|naturaltime }}</div>
+      </div>
+    {% empty %}
+      <p class="muted">Әлі белгі жоқ. Сабақтарды аяқтауды бастаңыз!</p>
+    {% endfor %}
+  </div>
+  <p><a href="{% url 'gamification:badges' %}">Барлық белгілерді көру →</a></p>
+</div>
+{% endblock %}

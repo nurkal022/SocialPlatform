@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+{% load ustaz_tags %}
+{% block title %}{{ lesson.title }}{% endblock %}
+
+{% block content %}
+<div class="lp-shell" x-data="lessonPlayer({
+    total: {{ step_count }},
+    completed: {{ is_completed|yesno:'true,false' }},
+    lessonId: {{ lesson.id }}
+})">
+
+  {# ====== LEFT: course tree ====== #}
+  {% include "courses/_course_sidebar.html" with current_lesson_id=lesson.id current_module_id=module.id %}
+
+  {# ====== CENTER: stepped content ====== #}
+  <main class="lp-main">
+    <div class="lp-head">
+      <div class="lp-crumb">
+        Модуль {{ module.order }} · {{ module.title }}
+      </div>
+      <h1 class="lp-title">{{ lesson.title }}</h1>
+      {% if lesson.summary %}<p class="lp-lead">{{ lesson.summary }}</p>{% endif %}
+    </div>
+
+    {# Progress dots #}
+    <div class="lp-stepper">
+      {% for s in steps %}
+        <button class="lp-dot" :class="{ 'is-active': step === {{ forloop.counter0 }}, 'is-done': step > {{ forloop.counter0 }} }"
+                @click="goto({{ forloop.counter0 }})" type="button"></button>
+      {% endfor %}
+      <button class="lp-dot lp-dot-final" :class="{ 'is-active': step === {{ step_count }}, 'is-done': completed }"
+              @click="goto({{ step_count }})" type="button">🏁</button>
+    </div>
+
+    {# Top video, shown once on first step #}
+    {% if lesson.video or lesson.video_url %}
+      <div class="lp-video" x-show="step === 0">
+        {% if lesson.video %}
+          <video src="{{ lesson.video.url }}" controls></video>
+        {% else %}
+          <iframe src="{{ lesson.video_url|youtube_embed }}" allowfullscreen frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {# Steps — each step is a group of blocks, or a single question block #}
+    {% for s in steps %}
+      <section class="lp-step" x-show="step === {{ forloop.counter0 }}" x-cloak>
+        <div class="lp-step-num">Қадам {{ forloop.counter }} / {{ step_count }}</div>
+        {% if s.kind == 'question' %}
+          {% with q=s.blocks.0 %}
+          <div class="lp-question" x-data="checkpoint({correct: {{ q.value.correct }}})">
+            <h2>{{ q.value.text }}</h2>
+            <div class="lp-choices">
+              {% for ch in q.value.choices %}
+                <label class="lp-choice"
+                       :class="{ 'is-picked': picked === {{ forloop.counter0 }},
+                                 'is-correct': checked && {{ forloop.counter0 }} === correct,
+                                 'is-wrong': checked && picked === {{ forloop.counter0 }} && picked !== correct }">
+                  <input type="radio" :disabled="checked" value="{{ forloop.counter0 }}" x-model.number="picked">
+                  <span>{{ ch }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            <div class="lp-cp-actions">
+              <button type="button" class="btn btn-primary btn-sm" @click="check()" x-show="!checked" :disabled="picked === null">Тексеру</button>
+              <button type="button" class="btn btn-ghost btn-sm" @click="reset()" x-show="checked">Қайталау</button>
+              <span x-show="checked && picked === correct" class="lp-cp-ok">✓ Дұрыс!</span>
+              <span x-show="checked && picked !== correct" class="lp-cp-bad">✗ Дұрыс емес</span>
+            </div>
+            {% if q.value.explanation %}
+              <div class="lp-cp-explain" x-show="checked" x-cloak>💡 {{ q.value.explanation }}</div>
+            {% endif %}
+          </div>
+          {% endwith %}
+        {% else %}
+          <div class="lp-content">
+            {% for block in s.blocks %}
+              {% include "courses/_block.html" with block=block %}
+            {% empty %}
+              <p class="muted">Бұл сабақтың мазмұны әлі толтырылмаған.</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+      </section>
+    {% endfor %}
+
+    {# Final step: summary + complete + next lesson #}
+    <section class="lp-step lp-step-final" x-show="step === {{ step_count }}" x-cloak>
+      <div class="lp-step-num">Сабақ соңы</div>
+      <h2>Жарайсыз! 🎉</h2>
+      <p>Сіз «{{ lesson.title }}» сабағының барлық қадамдарын өттіңіз.</p>
+
+      {% if module.has_test and not next_lesson and module.quiz %}
+        <div class="lp-final-card">
+          <h3>📝 Модуль тесті</h3>
+          <p>Бұл — модульдің соңғы сабағы. Тестті тапсырып, модульді бекітіңіз.</p>
+          <a class="btn btn-primary" href="{% url 'assessments:quiz_start' module.quiz.id %}">Тестке өту →</a>
+        </div>
+      {% endif %}
+
+      <div class="lp-final-actions">
+        {% if is_completed %}
+          <span class="completed-badge">✓ Сабақ аяқталды</span>
+        {% else %}
+          <form method="post" action="{% url 'courses:complete_lesson' lesson.id %}">
+            {% csrf_token %}
+            <button class="btn btn-primary btn-lg" type="submit">✓ Сабақты аяқтау</button>
+          </form>
+        {% endif %}
+        {% if next_lesson %}
+          <a class="btn btn-accent btn-lg" href="{{ next_lesson.get_absolute_url }}">Келесі сабақ: {{ next_lesson.title|truncatechars:30 }} →</a>
+        {% endif %}
+      </div>
+    </section>
+
+    {# Step nav #}
+    <div class="lp-nav">
+      <button type="button" class="btn btn-ghost" @click="prev()" :disabled="step === 0">← Артқа</button>
+      <span class="lp-nav-info" x-text="`${step + 1} / ${total + 1}`"></span>
+      <button type="button" class="btn btn-primary" @click="next()" :disabled="step === total">
+        <span x-show="step < total">Келесі →</span>
+        <span x-show="step === total" x-cloak>Соңы</span>
+      </button>
+    </div>
+
+    {# ====== Comments ====== #}
+    <section class="lp-comments" x-data="{open: {{ comments|length|yesno:'true,false' }}}">
+      <div class="lp-comments-head" @click="open = !open">
+        <h3>💬 Талқылау <span class="muted">({{ comments|length }})</span></h3>
+        <span class="lp-chev" :class="{'is-open': open}">▾</span>
+      </div>
+      <div x-show="open" x-cloak>
+        {% if user.is_authenticated %}
+          <form method="post" action="{% url 'social:add_comment' lesson.id %}" class="lp-comment-form">
+            {% csrf_token %}
+            <div class="lp-comment-user">
+              <div class="avatar-fallback" style="width:36px;height:36px;font-size:14px;">{{ user.display_name|slice:":1"|upper }}</div>
+            </div>
+            <div style="flex:1;">
+              <textarea name="body" rows="2" maxlength="2000" required
+                        placeholder="Сабақ туралы пікіріңізді жазыңыз..."
+                        style="width:100%; padding:10px 14px; border:1.5px solid var(--line); border-radius:10px; font:inherit; font-size:14.5px; resize:vertical;"></textarea>
+              <button class="btn btn-primary btn-sm" style="margin-top:6px;">Жариялау</button>
+            </div>
+          </form>
+        {% else %}
+          <p class="muted">Талқылауға қосылу үшін <a href="{% url 'accounts:login' %}?next={{ request.path }}">кіріңіз</a>.</p>
+        {% endif %}
+
+        <div class="lp-comments-list">
+          {% for c in comments %}
+            <div class="lp-comment">
+              <div class="lp-comment-user">
+                {% if c.user.avatar %}
+                  <img src="{{ c.user.avatar.url }}" alt="" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">
+                {% else %}
+                  <div class="avatar-fallback" style="width:36px;height:36px;font-size:14px;">{{ c.user.display_name|slice:":1"|upper }}</div>
+                {% endif %}
+              </div>
+              <div style="flex:1;">
+                <div class="lp-comment-meta">
+                  <a href="{% url 'accounts:profile' c.user.username %}"><strong>{{ c.user.display_name }}</strong></a>
+                  <span class="muted small">· {{ c.created_at|timesince }} бұрын</span>
+                </div>
+                <div class="lp-comment-body">{{ c.body|linebreaksbr }}</div>
+                <div class="lp-comment-actions">
+                  <button type="button" class="lp-like-btn" onclick="toggleLike({{ c.id }}, this)" data-count="{{ c.likes.count }}">
+                    ♡ <span>{{ c.likes.count }}</span>
+                  </button>
+                  {% if user.is_authenticated %}
+                    <button type="button" class="lp-reply-btn" onclick="toggleReply({{ c.id }})">Жауап беру</button>
+                    {% if c.user_id != user.id %}
+                      <button type="button" class="lp-reply-btn" onclick="reportItem('comment', {{ c.id }})" title="Шағым">🚩</button>
+                    {% endif %}
+                  {% endif %}
+                </div>
+                <form method="post" action="{% url 'social:add_comment' lesson.id %}" id="reply-form-{{ c.id }}" class="lp-comment-form" style="display:none; margin-top:10px;">
+                  {% csrf_token %}
+                  <input type="hidden" name="parent_id" value="{{ c.id }}">
+                  <div style="flex:1;">
+                    <textarea name="body" rows="2" maxlength="2000" required placeholder="Жауап..." style="width:100%; padding:8px 12px; border:1.5px solid var(--line); border-radius:8px; font:inherit; font-size:14px;"></textarea>
+                    <button class="btn btn-primary btn-sm" style="margin-top:6px;">Жіберу</button>
+                  </div>
+                </form>
+                {% for r in c.replies.all %}
+                  {% if not r.is_hidden %}
+                    <div class="lp-comment lp-comment-reply">
+                      <div class="lp-comment-user">
+                        {% if r.user.avatar %}
+                          <img src="{{ r.user.avatar.url }}" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">
+                        {% else %}
+                          <div class="avatar-fallback" style="width:28px;height:28px;font-size:12px;">{{ r.user.display_name|slice:":1"|upper }}</div>
+                        {% endif %}
+                      </div>
+                      <div style="flex:1;">
+                        <div class="lp-comment-meta">
+                          <strong>{{ r.user.display_name }}</strong>
+                          <span class="muted small">· {{ r.created_at|timesince }} бұрын</span>
+                        </div>
+                        <div class="lp-comment-body small">{{ r.body|linebreaksbr }}</div>
+                      </div>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          {% empty %}
+            <p class="muted center" style="padding: 30px 0;">Әзірге пікір жоқ. Алғашқы болыңыз!</p>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  </main>
+
+  {# ====== FLOATING AI TUTOR ====== #}
+  <button class="lp-tutor-fab" @click="tutorOpen = !tutorOpen" :class="{ 'is-open': tutorOpen }">
+    <span x-show="!tutorOpen">🤖</span>
+    <span x-show="tutorOpen" x-cloak>×</span>
+  </button>
+
+  <aside class="lp-tutor" :class="{ 'is-open': tutorOpen }" x-cloak>
+    <div class="lp-tutor-head">
+      <div>
+        <strong>🤖 ИИ-әдіскер</strong>
+        <div class="small muted">{{ lesson.title|truncatechars:40 }}</div>
+      </div>
+      <button type="button" class="lp-tutor-close" @click="tutorOpen = false">×</button>
+    </div>
+    <div class="lp-tutor-feed" x-ref="feed">
+      <template x-for="m in tutorMessages" :key="m.id">
+        <div class="bubble" :class="m.role">
+          <span x-show="m.content" x-text="m.content"></span>
+          <span x-show="!m.content && m.role === 'assistant'" class="tutor-typing">
+            <span></span><span></span><span></span>
+          </span>
+        </div>
+      </template>
+      <div x-show="tutorMessages.length === 0" class="lp-tutor-empty">
+        Осы сабақ бойынша сұрағыңызды жазыңыз. ИИ-әдіскер контекстіңізге қарап жауап береді.
+      </div>
+    </div>
+    <form class="lp-tutor-input" @submit.prevent="askTutor()">
+      <input x-model="tutorDraft" :disabled="tutorBusy" placeholder="Мысалы: «бұл сабақтың негізгі идеясы не?»" required>
+      <button class="btn btn-primary btn-sm" :disabled="tutorBusy || !tutorDraft.trim()">
+        <span x-show="!tutorBusy">→</span>
+        <span x-show="tutorBusy" x-cloak>…</span>
+      </button>
+    </form>
+  </aside>
+
+  {# Backdrop when tutor open on mobile #}
+  <div class="lp-backdrop" x-show="tutorOpen" @click="tutorOpen = false" x-cloak></div>
+</div>
+
+<script>
+function lessonPlayer({total, completed, lessonId}) {
+  return {
+    step: 0,
+    total: total,
+    completed: completed,
+    lessonId: lessonId,
+    tutorOpen: false,
+    tutorMessages: [],
+    tutorDraft: "",
+    tutorBusy: false,
+    _id: 1,
+    init() {
+      // restore last step from localStorage
+      const saved = parseInt(localStorage.getItem(`ustaz_step_${this.lessonId}`) || '0');
+      if (saved >= 0 && saved <= this.total) this.step = saved;
+      this.$watch('step', v => localStorage.setItem(`ustaz_step_${this.lessonId}`, v));
+    },
+    next() { if (this.step < this.total) { this.step++; window.scrollTo({top:0,behavior:'smooth'}); } },
+    prev() { if (this.step > 0) { this.step--; window.scrollTo({top:0,behavior:'smooth'}); } },
+    goto(i) { this.step = i; window.scrollTo({top:0,behavior:'smooth'}); },
+    async askTutor() {
+      const text = this.tutorDraft.trim();
+      if (!text || this.tutorBusy) return;
+      const userId = this._id++;
+      this.tutorMessages.push({id: userId, role: "user", content: text});
+      this.tutorDraft = "";
+      const replyId = this._id++;
+      this.tutorMessages.push({id: replyId, role: "assistant", content: ""});
+      this.tutorBusy = true;
+      this.$nextTick(() => this.$refs.feed.scrollTop = this.$refs.feed.scrollHeight);
+      try {
+        const r = await fetch(`/ai/tutor/${this.lessonId}/send/`, {
+          method: "POST",
+          headers: {"Content-Type": "application/json", "X-CSRFToken": window.csrfToken()},
+          body: JSON.stringify({message: text}),
+        });
+        if (!r.ok) {
+          this.tutorMessages.find(m => m.id === replyId).content = "[қате: " + r.status + "]";
+          return;
+        }
+        const reader = r.body.getReader();
+        const decoder = new TextDecoder();
+        let acc = "";
+        while (true) {
+          const {value, done} = await reader.read();
+          if (done) break;
+          acc += decoder.decode(value, {stream: true});
+          this.tutorMessages.find(m => m.id === replyId).content = acc;
+          this.$refs.feed.scrollTop = this.$refs.feed.scrollHeight;
+        }
+      } catch (e) {
+        this.tutorMessages.find(m => m.id === replyId).content = "[қате: " + e + "]";
+      } finally {
+        this.tutorBusy = false;
+      }
+    },
+  };
+}
+function checkpoint({correct, choices}) {
+  return {
+    correct: correct,
+    picked: null,
+    checked: false,
+    check() { this.checked = true; },
+    reset() { this.checked = false; this.picked = null; },
+  };
+}
+
+async function toggleLike(commentId, btn) {
+  const r = await fetch(`/s/comment/${commentId}/like/`, {
+    method: "POST",
+    headers: {"X-CSRFToken": window.csrfToken()},
+  });
+  if (r.ok) {
+    const data = await r.json();
+    btn.querySelector("span").textContent = data.count;
+    btn.classList.toggle("is-liked", data.liked);
+  }
+}
+
+function toggleReply(commentId) {
+  const f = document.getElementById(`reply-form-${commentId}`);
+  if (f) f.style.display = f.style.display === "none" ? "flex" : "none";
+}
+
+function reportItem(kind, targetId) {
+  const reason = prompt("Шағымның себебін қысқаша жазыңыз:");
+  if (!reason) return;
+  const fd = new FormData();
+  fd.append("reason", reason);
+  fetch(`/s/report/${kind}/${targetId}/`, {
+    method: "POST",
+    headers: {"X-CSRFToken": window.csrfToken()},
+    body: fd,
+  }).then(r => {
+    if (r.ok || r.redirected) alert("Шағым жіберілді. Модератор қарайды.");
+    else alert("Қате: " + r.status);
+  });
+}
+</script>
+{% endblock %}

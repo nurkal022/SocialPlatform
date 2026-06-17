@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Белгілер{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>Белгілер галереясы</h1>
+  <p class="muted">Платформада қол жетімді барлық белгілер. Үнсіздер сізде әлі жоқ.</p>
+  <div class="badge-grid">
+    {% for b in badges %}
+      <div class="badge-card {% if b.id not in owned_ids %}locked{% endif %}" title="{{ b.description }}">
+        <div class="badge-icon">{{ b.icon }}</div>
+        <div><strong>{{ b.name }}</strong></div>
+        <div class="small muted">{{ b.description }}</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}{{ profile_user.display_name }}{% endblock %}
+{% block content %}
+<div class="container">
+
+  {# ====== HEADER ====== #}
+  <div class="card">
+    <div style="display:flex; gap:24px; align-items:center; flex-wrap:wrap;">
+      {% if profile_user.avatar %}
+        <img src="{{ profile_user.avatar.url }}" alt="" style="width:96px;height:96px;border-radius:50%;object-fit:cover;">
+      {% else %}
+        <div class="avatar-fallback" style="width:96px;height:96px;font-size:40px;">{{ profile_user.display_name|slice:":1"|upper }}</div>
+      {% endif %}
+      <div style="flex:1; min-width: 240px;">
+        <h1 style="margin:0;">{{ profile_user.display_name }}</h1>
+        <div class="muted" style="margin-top: 4px;">
+          {{ profile_user.get_role_display }}
+          {% if profile_user.university %} · {{ profile_user.university }}{% endif %}
+          {% if profile_user.year_of_study %} · {{ profile_user.year_of_study }}-курс{% endif %}
+          {% if profile_user.region %} · {{ profile_user.region }}{% endif %}
+        </div>
+        {% if profile_user.bio %}<p style="margin: 12px 0 0;">{{ profile_user.bio }}</p>{% endif %}
+      </div>
+      {% if profile_user == user %}
+        <div>
+          <a class="btn btn-ghost btn-sm" href="{% url 'accounts:edit_profile' %}">⚙ Өңдеу</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ====== STATS ====== #}
+  <div class="stat-grid">
+    <div class="stat"><div class="label">XP</div><div class="value">{{ gprofile.xp|default:0|intcomma }}</div></div>
+    <div class="stat"><div class="label">Деңгей</div><div class="value">{{ gprofile.level|default:1 }}</div></div>
+    <div class="stat"><div class="label">Streak</div><div class="value">🔥 {{ streak.current|default:0 }}</div></div>
+    <div class="stat"><div class="label">Ең ұзақ streak</div><div class="value">{{ streak.longest|default:0 }}</div></div>
+    <div class="stat"><div class="label">Курстар</div><div class="value">{{ enrollments|length }}</div></div>
+    <div class="stat"><div class="label">Сертификаттар</div><div class="value">{{ cert_count }}</div></div>
+  </div>
+
+  <div class="row" style="margin-top: 24px; align-items: flex-start;">
+
+    {# ====== LEFT: courses + badges ====== #}
+    <div style="flex: 2; min-width: 320px;">
+      <h2>Курстар</h2>
+      {% for e in enrollments %}
+        <div class="card" style="margin-bottom: 10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <a href="{{ e.course.get_absolute_url }}"><strong>{{ e.course.title }}</strong></a>
+            <span class="pill" style="background: var(--primary); color: white;">{{ e.progress_pct }}%</span>
+          </div>
+          <div class="progress" style="margin-top: 6px;"><div style="width: {{ e.progress_pct }}%"></div></div>
+          {% if e.completed_at %}<div class="small muted" style="margin-top: 4px;">✓ Аяқталды — {{ e.completed_at|date:"d.m.Y" }}</div>{% endif %}
+        </div>
+      {% empty %}
+        <p class="muted">Әлі курсқа жазылмаған.</p>
+      {% endfor %}
+
+      <h2 style="margin-top: 30px;">Белгілер ({{ profile_user.badges.count }})</h2>
+      {% if badges %}
+        <div class="badge-grid">
+          {% for ub in badges %}
+            <div class="badge-card" title="{{ ub.badge.description }}">
+              <div class="badge-icon">{{ ub.badge.icon }}</div>
+              <div><strong>{{ ub.badge.name }}</strong></div>
+              <div class="small muted">{{ ub.awarded_at|naturaltime }}</div>
+            </div>
+          {% endfor %}
+        </div>
+        <p style="margin-top: 12px;"><a href="{% url 'gamification:badges' %}" class="small">Барлық белгілер →</a></p>
+      {% else %}
+        <p class="muted">Әлі белгі жоқ.</p>
+      {% endif %}
+    </div>
+
+    {# ====== RIGHT: activity timeline ====== #}
+    <div style="flex: 1; min-width: 280px;">
+      <h2>Соңғы белсенділік</h2>
+      <div class="timeline">
+        {% for t in timeline %}
+          <div class="timeline-item">
+            <div class="timeline-icon">{{ t.icon }}</div>
+            <div style="flex:1; min-width: 0;">
+              <div style="font-weight: 600; font-size: 14px;">{{ t.title }}</div>
+              <div class="small muted">{{ t.course|truncatechars:32 }}</div>
+              <div class="small muted">{{ t.when|naturaltime }}</div>
+            </div>
+          </div>
+        {% empty %}
+          <p class="muted">Әлі белсенділік жоқ.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

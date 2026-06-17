@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Профильді өңдеу{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 600px;">
+  <h1>Профильді өңдеу</h1>
+  <form method="post" enctype="multipart/form-data" class="form">{% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+      <div>
+        <label>{{ field.label }}</label>
+        {{ field }}
+        {{ field.errors }}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Сақтау</button>
+  </form>
+</div>
+{% endblock %}

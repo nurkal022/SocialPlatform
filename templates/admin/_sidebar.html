@@ -1,0 +1,60 @@
+{% load static %}
+{% with p=request.path %}
+<div class="ua-nav">
+  <a href="{% url 'admin:index' %}" class="ua-nav-link {% if p == '/admin/' %}is-active{% endif %}">
+    <span class="ua-nav-ico">🏠</span> Басты бет
+  </a>
+
+  <div class="ua-nav-section">
+    <div class="ua-nav-title">Контент</div>
+    <a href="{% url 'admin:courses_course_changelist' %}" class="ua-nav-link {% if '/courses/course/' in p %}is-active{% endif %}">
+      <span class="ua-nav-ico">📚</span> Курстар
+    </a>
+    <a href="{% url 'admin:courses_module_changelist' %}" class="ua-nav-link {% if '/courses/module/' in p %}is-active{% endif %}">
+      <span class="ua-nav-ico">📂</span> Модульдер
+    </a>
+    <a href="{% url 'admin:courses_lesson_changelist' %}" class="ua-nav-link {% if '/courses/lesson/' in p %}is-active{% endif %}">
+      <span class="ua-nav-ico">📖</span> Сабақтар
+    </a>
+  </div>
+
+  <div class="ua-nav-section">
+    <div class="ua-nav-title">Бағалау</div>
+    <a href="{% url 'admin:assessments_quiz_changelist' %}" class="ua-nav-link {% if '/assessments/quiz/' in p %}is-active{% endif %}">
+      <span class="ua-nav-ico">📝</span> Тесттер
+    </a>
+    <a href="{% url 'admin:assessments_question_changelist' %}" class="ua-nav-link {% if '/assessments/question/' in p %}is-active{% endif %}">
+      <span class="ua-nav-ico">❓</span> Сұрақтар
+    </a>
+    <a href="{% url 'admin:assessments_casestudy_changelist' %}" class="ua-nav-link {% if '/assessments/casestudy/' in p %}is-active{% endif %}">
+      <span class="ua-nav-ico">📋</span> Кейстер
+    </a>
+    <a href="{% url 'admin:assessments_casesubmission_changelist' %}" class="ua-nav-link {% if '/assessments/casesubmission/' in p %}is-active{% endif %}">
+      <span class="ua-nav-ico">📥</span> Тапсырылған кейстер
+    </a>
+  </div>
+
+  <div class="ua-nav-section">
+    <div class="ua-nav-title">Студенттер</div>
+    <a href="{% url 'admin:accounts_user_changelist' %}" class="ua-nav-link {% if '/accounts/user/' in p %}is-active{% endif %}">
+      <span class="ua-nav-ico">👥</span> Пайдаланушылар
+    </a>
+    <a href="{% url 'admin:certificates_certificate_changelist' %}" class="ua-nav-link {% if '/certificates/certificate/' in p %}is-active{% endif %}">
+      <span class="ua-nav-ico">🎓</span> Сертификаттар
+    </a>
+  </div>
+
+  <div class="ua-nav-section">
+    <div class="ua-nav-title">Жүйе</div>
+    <a href="{% url 'admin:aitutor_aicalllog_changelist' %}" class="ua-nav-link {% if '/aitutor/' in p %}is-active{% endif %}">
+      <span class="ua-nav-ico">🤖</span> ИИ журналы
+    </a>
+    <a href="{% url 'admin:gamification_badge_changelist' %}" class="ua-nav-link {% if '/gamification/' in p %}is-active{% endif %}">
+      <span class="ua-nav-ico">🏅</span> Белгілер
+    </a>
+    <a href="{% url 'admin:social_report_changelist' %}" class="ua-nav-link {% if '/social/' in p %}is-active{% endif %}">
+      <span class="ua-nav-ico">⚠️</span> Шағымдар
+    </a>
+  </div>
+</div>
+{% endwith %}

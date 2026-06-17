@@ -1,0 +1,49 @@
+{% comment %}
+Required context: course, modules, completed_lesson_ids
+Optional: current_lesson_id, current_case_id, current_quiz_id, current_module_id
+{% endcomment %}
+<aside class="lp-sidebar">
+  <a href="{{ course.get_absolute_url }}" class="lp-back">← {{ course.title|truncatechars:32 }}</a>
+  <nav class="lp-tree">
+    {% for m in modules %}
+      <details class="lp-module" {% if m.id == current_module_id %}open{% endif %}>
+        <summary class="lp-module-head">
+          <span class="lp-module-num">{{ m.order }}</span>
+          <span class="lp-module-title">{{ m.title }}</span>
+          <span class="lp-chev">▾</span>
+        </summary>
+        <ul class="lp-lessons">
+          {% for ln in m.lessons.all %}
+            <li class="lp-lesson {% if ln.id == current_lesson_id %}is-current{% endif %} {% if ln.id in completed_lesson_ids %}is-done{% endif %}">
+              <a href="{{ ln.get_absolute_url }}">
+                <span class="lp-lesson-dot">
+                  {% if ln.id in completed_lesson_ids %}✓{% elif ln.id == current_lesson_id %}●{% else %}○{% endif %}
+                </span>
+                <span>{{ ln.title }}</span>
+                <span class="lp-lesson-min">{{ ln.duration_minutes }} мин</span>
+              </a>
+            </li>
+          {% endfor %}
+          {% for cs in m.cases.all %}
+            {% if cs.is_published %}
+              <li class="lp-lesson lp-lesson-case {% if cs.id == current_case_id %}is-current{% endif %}">
+                <a href="{% url 'assessments:case_detail' cs.id %}{% if current_lesson_id %}?from={{ current_lesson_id }}{% endif %}">
+                  <span class="lp-lesson-dot">📋</span>
+                  <span>{{ cs.title }}</span>
+                </a>
+              </li>
+            {% endif %}
+          {% endfor %}
+          {% if m.has_test and m.quiz %}
+            <li class="lp-lesson lp-lesson-quiz {% if m.quiz.id == current_quiz_id %}is-current{% endif %}">
+              <a href="{% url 'assessments:quiz_start' m.quiz.id %}">
+                <span class="lp-lesson-dot">📝</span>
+                <span>Модуль тесті</span>
+              </a>
+            </li>
+          {% endif %}
+        </ul>
+      </details>
+    {% endfor %}
+  </nav>
+</aside>

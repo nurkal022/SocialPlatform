@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load ustaz_tags %}
+{% block title %}Нәтиже{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>Нәтиже: {{ attempt.score_pct }}%</h1>
+  <p>
+    {% if attempt.is_passed %}
+      <span class="pill pill-success">✓ Өттіңіз ({{ attempt.quiz.pass_pct }}% қажет)</span>
+    {% else %}
+      <span class="pill pill-warn">Өте алмадыңыз. {{ attempt.quiz.pass_pct }}% қажет.</span>
+    {% endif %}
+    <span class="muted">{{ attempt.points_earned }} / {{ attempt.points_max }} ұпай</span>
+  </p>
+
+  {% for q in questions %}
+    {% with r=attempt.results|get_item:q.id %}
+    <div class="quiz-question">
+      <div class="qtitle">{{ forloop.counter }}. {{ q.text }}</div>
+      <div class="small muted">{{ r.points }} / {{ r.max }} ұпай</div>
+      {% if q.kind == "single" or q.kind == "multiple" %}
+        {% for ch in q.choices.all %}
+          <div class="choice {% if ch.is_correct %}correct{% endif %}">
+            {% if ch.is_correct %}✓{% else %}·{% endif %} {{ ch.text }}
+          </div>
+        {% endfor %}
+      {% endif %}
+      {% if q.explanation %}<p class="small muted">💡 {{ q.explanation }}</p>{% endif %}
+    </div>
+    {% endwith %}
+  {% endfor %}
+
+  <a class="btn btn-ghost" href="{{ attempt.quiz.course.get_absolute_url }}">← Курсқа қайту</a>
+</div>
+{% endblock %}

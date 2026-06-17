@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}ИИ-әдіскер: {{ lesson.title }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 720px;">
+  <div class="small muted"><a href="{{ lesson.get_absolute_url }}">← {{ lesson.title }}</a></div>
+  <h1>🤖 ИИ-әдіскер</h1>
+  <p class="muted">Сабақ контекстінде сұрақ қойыңыз. Әдіскер тек педагогика тақырыбында жауап береді.</p>
+
+  <div class="tutor-panel" x-data="tutor({{ lesson.id }})">
+    <div class="tutor-header">
+      <strong>{{ lesson.title }}</strong>
+    </div>
+    <div class="tutor-feed" x-ref="feed">
+      {% for m in history %}
+        <div class="bubble {{ m.role }}">{{ m.content }}</div>
+      {% endfor %}
+      <template x-for="m in messages" :key="m.id">
+        <div class="bubble" :class="m.role" x-text="m.content"></div>
+      </template>
+    </div>
+    <form class="tutor-input" @submit.prevent="send()">
+      <input x-model="draft" :disabled="busy" placeholder="Сұрағыңызды жазыңыз..." required>
+      <button class="btn btn-primary btn-sm" :disabled="busy || !draft.trim()">
+        <span x-show="!busy">Жіберу</span>
+        <span x-show="busy">...</span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+function tutor(lessonId) {
+  return {
+    draft: "",
+    busy: false,
+    messages: [],
+    _id: 1,
+    async send() {
+      const text = this.draft.trim();
+      if (!text || this.busy) return;
+      const userId = this._id++;
+      this.messages.push({id: userId, role: "user", content: text});
+      this.draft = "";
+      const replyId = this._id++;
+      this.messages.push({id: replyId, role: "assistant", content: ""});
+      this.busy = true;
+      this.$nextTick(() => this.$refs.feed.scrollTop = this.$refs.feed.scrollHeight);
+      try {
+        const r = await fetch(`/ai/tutor/${lessonId}/send/`, {
+          method: "POST",
+          headers: {"Content-Type": "application/json", "X-CSRFToken": window.csrfToken()},
+          body: JSON.stringify({message: text}),
+        });
+        if (!r.ok) {
+          this.messages.find(m => m.id === replyId).content = "[қате: " + r.status + "]";
+          return;
+        }
+        const reader = r.body.getReader();
+        const decoder = new TextDecoder();
+        let acc = "";
+        while (true) {
+          const {value, done} = await reader.read();
+          if (done) break;
+          acc += decoder.decode(value, {stream: true});
+          this.messages.find(m => m.id === replyId).content = acc;
+          this.$refs.feed.scrollTop = this.$refs.feed.scrollHeight;
+        }
+      } catch (e) {
+        this.messages.find(m => m.id === replyId).content = "[қате: " + e + "]";
+      } finally {
+        this.busy = false;
+      }
+    },
+  };
+}
+</script>
+{% endblock %}

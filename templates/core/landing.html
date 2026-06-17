@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load humanize static %}
+{% block title %}Болашақ ұстаздарға арналған академия{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">
+      <span class="dot"></span>
+      Қазақ тіліндегі бірінші ИИ-педагогика академиясы
+    </div>
+    <h1>Ұстаз болу — <span class="gr">өнер</span>.<br>Бізде оны үйренеміз.</h1>
+    <p class="lead">
+      Қазақ тіліндегі заманауи педагогика курстары, нақты мектеп жағдайлары,
+      ИИ-әдіскер және расталатын сертификат. Бір орында, тегін.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary btn-lg" href="{% url 'courses:catalog' %}">Курстарды бастау →</a>
+      <a class="btn btn-ghost btn-lg" href="{% url 'accounts:signup' %}">Ақысыз тіркелу</a>
+    </div>
+  </div>
+</section>
+
+<section class="container">
+  <div class="feature-grid">
+    <div class="feature-card v1">
+      <div class="ico">📚</div>
+      <h3>Модульдік курстар</h3>
+      <p>Бейне сабақ, теория, тестер, кейстер — бәрі бір ағынмен.</p>
+    </div>
+    <div class="feature-card v2">
+      <div class="ico">🤖</div>
+      <h3>ИИ-әдіскер</h3>
+      <p>Сабақ контекстінде сұрақ қойыңыз, жауап алыңыз — 24/7.</p>
+    </div>
+    <div class="feature-card v3">
+      <div class="ico">🏆</div>
+      <h3>XP пен значоктар</h3>
+      <p>50 деңгей, streak-тер, лидерборд және апталық челлендждер.</p>
+    </div>
+    <div class="feature-card v4">
+      <div class="ico">🎓</div>
+      <h3>Расталған сертификат</h3>
+      <p>Курс пен емтиханды тапсырыңыз — QR-кодпен PDF аласыз.</p>
+    </div>
+  </div>
+
+  <div style="display:flex; align-items:end; justify-content:space-between; gap:20px; margin: 56px 0 24px; flex-wrap:wrap;">
+    <div>
+      <h2 style="margin: 0;">Танымал курстар</h2>
+      <p class="muted" style="margin: 6px 0 0;">Жаңа бастаушылар да, тәжірибелі мұғалімдер де өз тақырыбын табады.</p>
+    </div>
+    <a href="{% url 'courses:catalog' %}" class="btn btn-ghost btn-sm">Барлық курстар →</a>
+  </div>
+
+  <div class="course-grid">
+    {% for course in courses %}
+      <a class="course-card" href="{{ course.get_absolute_url }}">
+        <div class="course-cover">
+          {% if course.cover %}<img src="{{ course.cover.url }}" alt="">{% else %}{{ course.title|truncatechars:60 }}{% endif %}
+        </div>
+        <div class="course-body">
+          <h3 class="course-title">{{ course.title }}</h3>
+          <div class="course-meta">
+            <span class="pill">{{ course.get_level_display }}</span>
+            <span class="muted">📖 {{ course.lesson_count }} сабақ</span>
+            <span class="muted">👥 {{ course.student_count }}</span>
+          </div>
+          <div class="course-desc">{{ course.short_description }}</div>
+        </div>
+      </a>
+    {% empty %}
+      <div class="card">
+        <p>Курстар жақын арада қосылады. Алғашқы курс — <strong>«Жалпы педагогика негіздері»</strong> — дайындалуда.</p>
+      </div>
+    {% endfor %}
+  </div>
+
+  {# ====== How it works (4 step strip) ====== #}
+  <div class="hiw" style="margin: 64px 0 40px;">
+    <div class="ab-section-head">
+      <div class="ab-eyebrow">Қалай жұмыс істейді</div>
+      <h2 style="margin: 8px 0 28px;">Төрт қарапайым қадам</h2>
+    </div>
+    <div class="hiw-grid">
+      <div class="hiw-step">
+        <div class="hiw-num">1</div>
+        <h3>Тіркеліңіз</h3>
+        <p>Логин + құпиясөз. Email қажет емес.</p>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-num">2</div>
+        <h3>Курс таңдаңыз</h3>
+        <p>Жалпы педагогика немесе цифрлық бағыт.</p>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-num">3</div>
+        <h3>Сабақ өтіңіз</h3>
+        <p>Видео, теория, чекпоинт, ИИ-көмекші.</p>
+      </div>
+      <div class="hiw-step">
+        <div class="hiw-num">4</div>
+        <h3>Сертификат</h3>
+        <p>Тест пен кейстен соң — расталған PDF.</p>
+      </div>
+    </div>
+  </div>
+
+  {# ====== Author teaser ====== #}
+  <div class="author-teaser">
+    <div class="author-teaser-inner">
+      <img class="author-teaser-photo" src="{% static 'img/author-sm.jpg' %}" alt="Айдарханова Назым Ермахановна">
+      <div style="flex:1;">
+        <div class="small muted" style="text-transform:uppercase; letter-spacing:0.06em; font-weight:700;">Жоба авторы</div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:700; margin: 4px 0 2px;">Айдарханова Назым Ермахановна</div>
+        <div class="muted small">Арнайы пән оқытушысы · Ғ. Мұратбаев атындағы Жетісай гуманитарлық техникалық колледжі</div>
+      </div>
+      <a class="btn btn-ghost" href="{% url 'core:about' %}">Толығырақ →</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
